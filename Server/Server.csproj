@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Models\" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="2.2.6" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Controllers\DecksController.cs" />
+    <Compile Remove="Models\DeckContext.cs" />
+    <Compile Remove="Models\CroupierContext.cs" />
+    <Compile Remove="Models\CardEnum.cs" />
+  </ItemGroup>
+</Project>
