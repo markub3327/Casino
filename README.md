@@ -2,12 +2,12 @@
 
 **Documentation**
 
-[![Release](https://img.shields.io/github/release/marhor3327/Casino.svg)]()     ![Issues](https://img.shields.io/github/issues/marhor3327/Casino.svg)     ![Size](https://img.shields.io/github/repo-size/marhor3327/Casino.svg)
-
-![alt text](http://url/to/img.png)
+[![Release](https://img.shields.io/github/release/marhor3327/Casino.svg)]()     
+[![Issues](https://img.shields.io/github/issues/marhor3327/Casino.svg)](https://github.com/marhor3327/Casino/issues)
+[![Size](https://img.shields.io/github/repo-size/marhor3327/Casino.svg)](README.md)
 
 **Casino** is an open source multiplatform console game written in C#. 
-  It uses .NetCore3.
+  It uses .NetCore3. It has been written in Visual Studio Community 2019 for Mac.
 
 ## Installation & Run
 
