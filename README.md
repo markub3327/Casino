@@ -2,15 +2,7 @@
 
 **Documentation**
 
-[![Stars](https://img.shields.io/github/stars/marhor3327/Casino.svg?style=social)]()
-
-[![Release](https://img.shields.io/github/release/marhor3327/Casino.svg)]()
-
-[![Last Commit](https://img.shields.io/github/last-commit/marhor3327/Casino.svg)]()
-
-[![Issues](https://img.shields.io/github/issues/marhor3327/Casino.svg)](issues)
-
-[![Size](https://img.shields.io/github/repo-size/marhor3327/Casino.svg)]()
+![Stars](https://img.shields.io/github/stars/marhor3327/Casino.svg?style=social) [![Release](https://img.shields.io/github/release/marhor3327/Casino.svg)]() ![Issues](https://img.shields.io/github/issues/marhor3327/Casino.svg) ![Size](https://img.shields.io/github/repo-size/marhor3327/Casino.svg)
 
 **Casino** is an open source multiplatform console game written in C#. 
   It uses .NetCore3.
