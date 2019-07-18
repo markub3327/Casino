@@ -6,9 +6,9 @@
 
 [![Release](https://img.shields.io/github/release/marhor3327/Casino.svg)]()
 
-[!Last Commit](https://img.shields.io/github/last-commit/marhor3327/Casino.svg)]()
+[![Last Commit](https://img.shields.io/github/last-commit/marhor3327/Casino.svg)]()
 
-[!Issues](https://img.shields.io/github/issues/marhor3327/Casino.svg)](issues)
+[![Issues](https://img.shields.io/github/issues/marhor3327/Casino.svg)](issues)
 
 [![Size](https://img.shields.io/github/repo-size/marhor3327/Casino.svg)]()
 
