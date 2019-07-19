@@ -15,5 +15,8 @@ namespace Casino.Server.Models
 
         // Tabulka databazy ukladajuca karty v hre
         public DbSet<Card> Cards { get; set; }
+
+        // Tabulka databazy ukladajuca herne balicky kariet
+        public DbSet<Deck> Decks { get; set; }
     }
 }

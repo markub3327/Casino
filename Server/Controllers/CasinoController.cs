@@ -17,77 +17,73 @@ namespace Casino.Server.Controllers
         {
             _context = context;
 
-            Console.WriteLine("Pocet hracov pri stole: {0}", context.Players.Count());
+            Console.WriteLine("Pocet hracov pri stole: {0}", _context.Players.Count());
 
-            if (context.Players.Count() == 0)
+            // Zisti ci uz je vytvoreny krupier v hre
+            if (_context.Players.Count() == 0)
             {
+                var deck = new Models.Deck(1, context);
+                _context.Decks.Add(deck);
+
                 var croupier = new Models.Croupier
                 {
-                    Id = 1,
                     Name = "Croupier",
-                    Wallet = 10000
+                    Wallet = 10000,
+                    Bet = 100
                 };
-                context.Players.Add(croupier);
+                _context.Players.Add(croupier);
+                _context.SaveChanges();
 
                 // Kazdy hrac ma na zaciatku 2 karty
-                context.Cards.Add(new Models.Card
-                {
-                    PlayerId = croupier.Id,
-                    Suit = Models.Card.ESuit.Diamonds,
-                    Value = "A"
-                });
-                context.Cards.Add(new Models.Card
-                {
-                    PlayerId = croupier.Id,
-                    Suit = Models.Card.ESuit.Clubs,
-                    Value = "3"
-                });
-
-                context.SaveChanges();
+                deck.GetCard(croupier.Id, _context);
+                deck.GetCard(croupier.Id, _context);
             }
         }
 
         // GET casino/
         [HttpGet]
-        public async Task<ActionResult> Get()
+        public async Task<IActionResult> Get()
         {
             // Vytvor pole hracov obsahujuce aj ich karty
             var players = await _context.Players.Include(p => p.Cards).ToListAsync();
-
-            // Vytvor vyslednu formu JSON pre hraca (obsahuje iba jeho Meno, stav penazenky, karty v hre)
-            /*var response = (Models.Player)players.Select(p => new
-            {
-                p.Name,
-                p.Wallet,
-                Cards = (List<Models.Card>)p.Cards.Select(c => new { c.Color, c.Suit, c.Value })
-            });*/
 
             return Ok(players);
         }
             
         // GET casino/3
-        /*[HttpGet("{id}")]
-        public async Task<ActionResult<Models.Player>> Get(long id)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> Get(long id)
         {
-            var todoItem = await _context.Player.FindAsync((id+1));
+            var player = await _context.Players.FindAsync(id);
 
-            if (todoItem == null)
+            if (player == null)
             {
                 return NotFound();
             }
 
-
-            return null;
-        }*/
-
-        // POST api/values
-        /*[HttpPost]
-        public void Post([FromBody] string value)
-        {
+            return Ok(player);
         }
 
+        // POST casino/
+        [HttpPost]
+        public async Task<IActionResult> Post([FromBody] Models.Player player)
+        {
+            Console.WriteLine("player ID {0}", player.Id);
+            Console.WriteLine("new player {0}", player.Name);
+            Console.WriteLine("player wallet {0}", player.Wallet);
+
+            await _context.Players.AddAsync(player);
+            await _context.SaveChangesAsync();
+
+            // Kazdy hrac ma na zaciatku 2 karty
+            await _context.Decks.First().GetCardAsync(player.Id, _context);
+            await _context.Decks.First().GetCardAsync(player.Id, _context);
+
+            return CreatedAtAction(nameof(Get), new { id = player.Id }, player);
+        }
+        
         // PUT api/values/5
-        [HttpPut("{id}")]
+        /*[HttpPut("{id}")]
         public void Put(int id, [FromBody] string value)
         {
         }

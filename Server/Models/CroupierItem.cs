@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Casino.Server.Models
 {
     public class Croupier : Player
     {
         // Krupier drzi herne balicky kariet
-        public Deck Decks { get; set; }
+        public List<Deck> Decks { get; set; }
     }
 }

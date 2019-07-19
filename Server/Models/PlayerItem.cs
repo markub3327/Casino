@@ -10,7 +10,9 @@ namespace Casino.Server.Models
         // Meno hraca
         public string Name { get; set; }
         // Penazeka
-        public int Wallet { get; set; }
+        public long Wallet { get; set; }
+        // Vyska stavky hraca, minimalna stavka je 100$
+        public long Bet { get; set; }
         // Karty na ruke
         public List<Card> Cards { get; set; }
     }

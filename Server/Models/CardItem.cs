@@ -4,15 +4,15 @@ namespace Casino.Server.Models
 {
     public class Card
     {
-        public enum ESuit
+        public enum ESuit : byte
         {
             Hearts = 0,     // Srdcova karta
             Clubs = 1,      // Krizova karta (trojlistok)
             Diamonds = 2,   // Kosostvorec
             Spades = 3      // Pikova karta
-        }
+        }   
 
-        public enum EColor
+        public enum EColor : byte
         {
             Black = 0,      // Cierna
             Red = 1         // Cervena
@@ -20,11 +20,10 @@ namespace Casino.Server.Models
 
         // Jedinecne cislo karty
         public long Id { get; set; }
-        // Id hraca, ktoremu patri tato karta
-        []
+        // ID hraca, ktoremu patri tato karta
         public long PlayerId { get; set; }
-        // Odkaz na hraca, ktoremu patri tato karta
-        //public Player Player { get; set; }
+        // ID balicku, do ktoreho patri tato karta
+        public long DeckId { get; set; }
         // Farba karty
         public EColor  Color
         {

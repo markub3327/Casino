@@ -47,7 +47,7 @@ namespace Casino.Server
             }
 
             app.UseHttpsRedirection();
-
+        
             app.UseRouting();
 
             app.UseAuthorization();
@@ -56,36 +56,6 @@ namespace Casino.Server
             {
                 endpoints.MapControllers();
             });
-
-            // Vytvor krupiera do hry
-            //var context = app.ApplicationServices.GetService<Models.ApiContext>();
-            //AddCroupier(context);
-        }
-
-        private static void AddCroupier(Models.ApiContext context)
-        {
-            var croupier = new Models.Croupier
-            {
-                Name = "Croupier",
-                Wallet = 10000
-            };
-            context.Players.Add(croupier);
-
-            // Kazdy hrac ma na zaciatku 2 karty
-            context.Cards.Add(new Models.Card
-            {
-                PlayerId = croupier.Id,
-                Suit = Models.Card.ESuit.Diamonds,
-                Value = "A"
-            });
-            context.Cards.Add(new Models.Card
-            {
-                PlayerId = croupier.Id,
-                Suit = Models.Card.ESuit.Clubs,
-                Value = "3"
-            });
-
-            context.SaveChanges();
-        }
+        }        
     }
 }
