@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Casino.Server.Models
 {
-    public class Croupier : Player
+    public class Croupier : Casino.Models.Player
     {
         // Krupier drzi herne balicky kariet
         public List<Deck> Decks { get; set; }

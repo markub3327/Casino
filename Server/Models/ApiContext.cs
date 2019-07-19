@@ -11,10 +11,10 @@ namespace Casino.Server.Models
         }
 
         // Tabulka databazy ukladajuca objekty hracov
-        public DbSet<Player> Players { get; set; }
+        public DbSet<Casino.Models.Player> Players { get; set; }
 
         // Tabulka databazy ukladajuca karty v hre
-        public DbSet<Card> Cards { get; set; }
+        public DbSet<Casino.Models.Card> Cards { get; set; }
 
         // Tabulka databazy ukladajuca herne balicky kariet
         public DbSet<Deck> Decks { get; set; }

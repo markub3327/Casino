@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Casino.Server.Models
+namespace Casino.Models
 {
     public class Card
     {

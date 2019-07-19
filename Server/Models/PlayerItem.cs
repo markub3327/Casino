@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Casino.Server.Models
+namespace Casino.Models
 {
     public class Player
     {

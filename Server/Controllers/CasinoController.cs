@@ -68,7 +68,7 @@ namespace Casino.Server.Controllers
 
         // POST casino/
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Models.Player player)
+        public async Task<IActionResult> Post([FromBody] Casino.Models.Player player)
         {
             // minimalna stavka je 100$
             if (player.Bet < 100) player.Bet = 100;
