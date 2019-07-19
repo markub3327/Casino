@@ -24,6 +24,7 @@ namespace Casino.Server.Controllers
             {
                 var deck = new Models.Deck(1, context);
                 _context.Decks.Add(deck);
+                _context.SaveChanges();
 
                 var croupier = new Models.Croupier
                 {
@@ -37,6 +38,7 @@ namespace Casino.Server.Controllers
                 // Kazdy hrac ma na zaciatku 2 karty
                 deck.GetCard(croupier.Id, _context);
                 deck.GetCard(croupier.Id, _context);
+                _context.SaveChanges();
             }
         }
 
@@ -52,33 +54,39 @@ namespace Casino.Server.Controllers
             
         // GET casino/3
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(long id)
+        public async Task<IActionResult> Get(int id)
         {
-            var player = await _context.Players.FindAsync(id);
+            var players = await _context.Players.Include(p => p.Cards).ToListAsync();
 
-            if (player == null)
+            if (id < 0 || id >= players.Count)
             {
                 return NotFound();
             }
 
-            return Ok(player);
+            return Ok(players[id]);
         }
 
         // POST casino/
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] Models.Player player)
         {
-            Console.WriteLine("player ID {0}", player.Id);
-            Console.WriteLine("new player {0}", player.Name);
-            Console.WriteLine("player wallet {0}", player.Wallet);
+            // minimalna stavka je 100$
+            if (player.Bet < 100) player.Bet = 100;
 
             await _context.Players.AddAsync(player);
             await _context.SaveChangesAsync();
 
+            Console.WriteLine("player ID {0}", player.Id);
+            Console.WriteLine("new player {0}", player.Name);
+            Console.WriteLine("player's wallet {0}", player.Wallet);
+            Console.WriteLine("player's bet {0}", player.Bet);
+             
             // Kazdy hrac ma na zaciatku 2 karty
-            await _context.Decks.First().GetCardAsync(player.Id, _context);
-            await _context.Decks.First().GetCardAsync(player.Id, _context);
-
+            var deck = _context.Decks.First();
+            await deck.GetCardAsync(player.Id, _context);
+            await deck.GetCardAsync(player.Id, _context);
+            await _context.SaveChangesAsync();
+                
             return CreatedAtAction(nameof(Get), new { id = player.Id }, player);
         }
         

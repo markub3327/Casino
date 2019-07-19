@@ -32,7 +32,7 @@ namespace Casino.Server.Models
                     return EColor.Red;
                 else
                     return EColor.Black;
-            }
+            }            
         }
         // Symbol karty
         public ESuit   Suit  { get; set; }

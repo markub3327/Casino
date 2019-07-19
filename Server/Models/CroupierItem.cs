@@ -7,5 +7,10 @@ namespace Casino.Server.Models
     {
         // Krupier drzi herne balicky kariet
         public List<Deck> Decks { get; set; }
+
+        public int CardSum(long playerId, ApiContext context)
+        {
+            return 0;
+        }
     }
 }

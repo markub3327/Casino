@@ -33,8 +33,6 @@ namespace Casino.Server.Models
                 context.Cards.Add(new Card { DeckId = this.Id, Value = "Q", Suit = (Card.ESuit)j });
                 context.Cards.Add(new Card { DeckId = this.Id, Value = "K", Suit = (Card.ESuit)j });
             }
-
-            context.SaveChanges();
         }
 
         // Vezme nahodnu kartu z balicka
@@ -47,8 +45,6 @@ namespace Casino.Server.Models
             card.PlayerId = playerId;
 
             Console.WriteLine("Volne karty v balicku {0}: {1}", this.Id, CardsNotUsed.Count());
-
-            context.SaveChanges();
         }
 
         // Vezme nahodnu kartu z balicka
@@ -61,8 +57,6 @@ namespace Casino.Server.Models
             card.PlayerId = playerId;
 
             Console.WriteLine("Volne karty v balicku {0}: {1}", this.Id, CardsNotUsed.Count());
-
-            await context.SaveChangesAsync();
         }
     }
 }

@@ -46,7 +46,7 @@ namespace Casino.Server
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
         
             app.UseRouting();
 
