@@ -2,8 +2,8 @@
 
 [![Release](https://img.shields.io/github/release/marhor3327/Casino.svg)](https://github.com/marhor3327/Casino/releases)     
 [![Issues](https://img.shields.io/github/issues/marhor3327/Casino.svg)](https://github.com/marhor3327/Casino/issues)
-[![Size](https://img.shields.io/github/repo-size/marhor3327/Casino.svg)
-[!Stars](https://img.shields.io/github/stars/marhor3327/Casino.svg)
+![Size](https://img.shields.io/github/repo-size/marhor3327/Casino.svg)
+![Stars](https://img.shields.io/github/stars/marhor3327/Casino.svg)
 
 **Documentation**
 
