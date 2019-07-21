@@ -20,4 +20,9 @@
     <Compile Remove="Models\CroupierContext.cs" />
     <Compile Remove="Models\CardEnum.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Items\Items.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+  </ItemGroup>
 </Project>

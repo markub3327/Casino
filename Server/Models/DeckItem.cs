@@ -12,7 +12,7 @@ namespace Casino.Server.Models
         // Jedinecne cislo balicku
         public long Id { get; set; }
         // Zasobnik kariet reprezentujuci balicek
-        public List<Casino.Models.Card> Cards { get; set; }
+        public List<Items.Card> Cards { get; set; }
         
         // Konstruktor balicku vytvori karty
         public Deck(long Id, ApiContext context)
@@ -22,16 +22,16 @@ namespace Casino.Server.Models
 
             for (int j = 0; j < 4; j++)
             {
-                context.Cards.Add(new Casino.Models.Card { DeckId = this.Id, Value = "A", Suit = (Casino.Models.Card.ESuit)j });
+                context.Cards.Add(new Items.Card { DeckId = this.Id, Value = "A", Suit = (Items.Card.ESuit)j });
 
                 for (int i = 2; i <= 10; i++)
                 {
-                    context.Cards.Add(new Casino.Models.Card { DeckId = this.Id, Value = i.ToString(), Suit = (Casino.Models.Card.ESuit)j });
+                    context.Cards.Add(new Items.Card { DeckId = this.Id, Value = i.ToString(), Suit = (Items.Card.ESuit)j });
                 }
 
-                context.Cards.Add(new Casino.Models.Card { DeckId = this.Id, Value = "J", Suit = (Casino.Models.Card.ESuit)j });
-                context.Cards.Add(new Casino.Models.Card { DeckId = this.Id, Value = "Q", Suit = (Casino.Models.Card.ESuit)j });
-                context.Cards.Add(new Casino.Models.Card { DeckId = this.Id, Value = "K", Suit = (Casino.Models.Card.ESuit)j });
+                context.Cards.Add(new Items.Card { DeckId = this.Id, Value = "J", Suit = (Items.Card.ESuit)j });
+                context.Cards.Add(new Items.Card { DeckId = this.Id, Value = "Q", Suit = (Items.Card.ESuit)j });
+                context.Cards.Add(new Items.Card { DeckId = this.Id, Value = "K", Suit = (Items.Card.ESuit)j });
             }
         }
 

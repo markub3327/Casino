@@ -1,150 +1,177 @@
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Runtime.Serialization.Json;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Collections.Generic;
+using Newtonsoft.Json;
+using System.IO;
+using System.Diagnostics;
 
 namespace Casino
 {
     public class Program
     {
-        // Trieda weboveho klienta
-        private static readonly HttpClient clientService = new HttpClient();
-        // Informacie o servery
-        private static string serverUri;
+        // Referencia na lokalneho hraca, s ktorym hram hru
+        private static Items.Player myPlayer;
+        
+        private static Client.Client client;
 
-        public static async Task Main(string[] args)
+        // Hlavne menu
+        private static Menu.ListMenu mainMenu;
+
+        public static void Main(string[] args)
         {
-            // HttpClient
-            clientService.DefaultRequestHeaders.Accept.Clear();
-            clientService.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
             // Encoding
-            Console.InputEncoding = System.Text.Encoding.Unicode;
-            Console.OutputEncoding = System.Text.Encoding.Unicode;
+            Console.InputEncoding = System.Text.Encoding.Default;
+            Console.OutputEncoding = System.Text.Encoding.Default;
 
-            // Starting game
-            Start();
+            // Vytvori hlavne menu
+            CreateMainMenu();
+
+            // Vycisti obrazovku na zaciatku hry
+            Console.Clear();
 
             do {
-                // Hlavne menu hry
-                await MainMenu();
+                // Hlavicka menu
+                Head();
+
+                // Vykonaj zvolenu akciu
+                mainMenu.InvokeResult().Wait();
             } while (true);
         }
 
-        private static void Start()
+        // Hlavne menu hry
+        private static void CreateMainMenu()
+        {
+            mainMenu = new Menu.ListMenu
+            {
+                Items = new List<Menu.MenuItem>
+                {
+                    new Menu.MenuItem { Text = "New player", IsEnabled = false, Action = NewPlayer },
+                    new Menu.MenuItem { Key = ConsoleKey.F2, Text = "Connect to server", IsEnabled = true, Action = Connect },
+                    new Menu.MenuItem { Text = "Create new server", IsEnabled = true },
+                    new Menu.MenuItem { Text = "Show profile", IsEnabled = false, Action = Profile },
+                    new Menu.MenuItem { Key = ConsoleKey.F1, Text = "About", IsEnabled = true, Action = About },
+                    new Menu.MenuItem { Key = ConsoleKey.Escape, Text = "Exit", IsEnabled = true, Action = () => Exit(0)  }
+                }
+            };
+        }
+
+        // Registracia noveho hraca
+        private static void NewPlayer()
+        {
+            string name, betS;
+            long bet;
+
+            // Zadajte udaje o novom hracovi
+            do {
+                // Zadajte meno svojho hraca
+                Console.Write("Enter player's name: ");
+                name = Console.ReadLine();
+
+                Console.Write("Enter first bet: ");
+                betS = Console.ReadLine();
+            } while (name == string.Empty || betS == string.Empty || !long.TryParse(betS, out bet));
+
+            Console.WriteLine();
+
+            // Pridaj hraca k stolu
+            myPlayer = client.AddPlayerAsync(new Items.Player
+            {
+                Bet = bet,
+                Name = name,
+                Wallet = 10000
+            }).Result;
+
+            // Ak sa podarilo pridat hraca k stolu povol zobrazenie jeho profilu
+            if (myPlayer != null)
+            {
+                mainMenu.Items[3].IsEnabled = true;
+                mainMenu.Items[0].IsEnabled = false;
+            }
+            else
+            {
+                mainMenu.Items[3].IsEnabled = false;
+            }
+        }
+
+        // Pripoj sa na server
+        private static void Connect()
+        {
+            // Vytvor spojenie
+            client = new Client.Client(new Client.ServerInfo("localhost", "5000", "casino"));
+
+            // Ak sa pripojil povol vytvorenie hraca
+            if (client.IsConnected)
+            {
+                mainMenu.Items[0].IsEnabled = true;
+                mainMenu.Items[2].IsEnabled = false;
+            }
+            else
+            {
+                mainMenu.Items[0].IsEnabled = false;
+                mainMenu.Items[2].IsEnabled = true;
+            }
+        }
+
+        // Profil hraca
+        private static void Profile()
+        {
+            myPlayer = client.GetPlayerAsync(myPlayer.Id - 1).Result;         // POCITAME V Db od 1 a v C# od 0 !!!
+            myPlayer.Print();
+        }
+
+        // Hlavicka
+        private static void Head()
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.Write("Digital AI Casino");
+            Console.ResetColor();
+            Console.WriteLine();
+        }
+
+        // O hre
+        private static void About()
         {
             Console.Clear();
+
             Console.Write("Welcome to ");
             Console.ForegroundColor = ConsoleColor.Red;
             Console.BackgroundColor = ConsoleColor.Black;
             Console.WriteLine("Digital AI Casino");
-            Console.ForegroundColor = ConsoleColor.Green;
+            Console.ResetColor();
+
             Console.WriteLine("Martin Horvath \u00A9 Copyright 2019 MIT");
             Console.WriteLine("Website: https://github.com/marhor3327/Casino.git");
-            Console.ForegroundColor = ConsoleColor.Gray;
             Console.WriteLine("University of Ss. Cyril and Methodius in Trnava");
-            Console.ResetColor();
             Console.WriteLine("===============================================\n");
         }
 
-        private static async Task MainMenu()
-        {            
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.BackgroundColor = ConsoleColor.Black;
-            Console.WriteLine("Digital AI Casino");
-            Console.ResetColor();
-            Console.WriteLine("===============================================");
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.BackgroundColor = ConsoleColor.Black;
-            Console.WriteLine("Menu");
-            Console.ResetColor();
-            Console.WriteLine("===============================================");
-            Console.ResetColor();
-            Console.WriteLine("F1 - Connect to server");
-            Console.WriteLine("Esc - Exit\n");
-
-            // Cakaj na stlacenie klavesy
-            var key = Console.ReadKey(true);
-
-            // Vykonanie prikazu
-            switch (key.Key)
-            {
-                case ConsoleKey.F1:
-                    await Connect();
-                    break;
-                case ConsoleKey.Escape:
-                    // Koniec hry
-                    Console.WriteLine("Thank you for playing");
-                    Console.WriteLine("Bay bay \u263A");
-                    Environment.Exit(0);
-                    break;     
-                default:
-                    // Zly prikaz
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.BackgroundColor = ConsoleColor.Black;
-                    Console.WriteLine("You entered bad command. Please try again.\n");
-                    Console.ResetColor();
-                    Console.Beep();
-                    break;               
-            }
-
-            //Console.Clear();
-        }
-
-        private static async Task Connect()
+        // Ukoncenie hry
+        private static void Exit(int code)
         {
-            string serverName;
-            string serverPort;
-            bool secure;
-
-            Console.WriteLine("Connect to existing server");
-            Console.WriteLine("===============================================\n");
-
-            do {
-                Console.Write("Enter server name: ");
-                serverName = Console.ReadLine();
-                Console.Write("Enter server port: ");
-                serverPort = Console.ReadLine();
-                Console.Write("Use SSL/TLS secure connection (Y/n): ");
-                if (Console.ReadKey().Key == ConsoleKey.Y) secure = true;
-                else                                       secure = false;
-            } while (serverName == string.Empty || serverPort == string.Empty);
-
-            // Vyskusaj sa spojit so serverom
-            try	
-            {
-                // Vygeneruje adresu pre komunikaciu so serverom
-                if (secure)
-                    serverUri = string.Format("https://{0}:{1}/casino/", serverName, serverPort);
-                else
-                    serverUri = string.Format("http://{0}:{1}/casino/", serverName, serverPort);
-
-                var msg = await clientService.GetStringAsync(serverUri);
-                Console.WriteLine(msg);
-            }  
-            catch(Exception e) /*HttpRequestException*/
-            {
-                ShowError("\nError!!!\n\tMessage:");
-                Console.WriteLine(" {0}", e.Message);
-            }
+            // Korektny koniec hry
+            Console.WriteLine("Thank you for playing");
+            Console.WriteLine("Bay bay \u263A");
+            Environment.Exit(code);
         }
 
-        private static void ShowError(string text)
+        // Spravy (chyby, varovania)
+        public static void ShowError(string text)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.BackgroundColor = ConsoleColor.Black;
             Console.Write(text);
             Console.ResetColor();
         }
-
-        private static void ShowWarning(string text)
+        public static void ShowWarning(string text)
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.BackgroundColor = ConsoleColor.Black;
             Console.Write(text);
             Console.ResetColor();
-        }        
+        }
     }
 }
