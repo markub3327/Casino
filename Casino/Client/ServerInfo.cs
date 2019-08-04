@@ -2,33 +2,27 @@
 
 namespace Casino.Client
 {
-    public class ServerInfo
+    public class ServerInfo : Uri
     {
-        // Adresa servera
-        public Uri serverUri { get; private set; }
-
-        public ServerInfo()
+        public ServerInfo() : base(Connect())
         {
-
         }
 
-        public ServerInfo(string api)
+        public ServerInfo(string uri) : base(uri)
         {
-            Connect(api);
         }
 
-
-        public ServerInfo(string serverName, string serverPort, string serverAPI)
+        public ServerInfo(string serverName, string serverPort, string serverAPI, bool secure) :
+            base((secure == true) ? $"https://{serverName}:{serverPort}/{serverAPI}" : $"http://{serverName}:{serverPort}/{serverAPI}")
         {
-            this.serverUri = new Uri($"http://{serverName}:{serverPort}/{serverAPI}");
         }
-
 
         // Pripoj k serveru
-        public void Connect(string api)
+        public static string Connect()
         {
             string serverName;
             string serverPort;
+            string serverAPI;
             bool secure;
 
             Console.WriteLine("Connect to existing server");
@@ -37,29 +31,38 @@ namespace Casino.Client
             // Zadajte parametre spojenia
             do
             {
-                //Console.Write("Enter server name: ");
-                serverName = "localhost";//Console.ReadLine();
+                Console.Write("Enter server name: ");
+                serverName = Console.ReadLine();
+            } while (serverName == string.Empty);
 
-                //Console.Write("Enter server port: ");
-                serverPort = "5000";//Console.ReadLine();
+            do
+            {
+                Console.Write("Enter server port: ");
+                serverPort = Console.ReadLine();
+            } while (serverPort == string.Empty);
 
-                Console.Write("Use SSL/TLS secure connection (Y/n): ");
-                if (Console.ReadKey().Key == ConsoleKey.Y) secure = true;
-                else secure = false;
+            do
+            {
+                Console.Write("Enter api name: ");
+                serverAPI = Console.ReadLine();
+            } while (serverAPI == string.Empty);
 
-                Console.WriteLine("\n");
-            } while (serverName == string.Empty || serverPort == string.Empty);
+            Console.Write("Use SSL/TLS secure connection (Y/n): ");
+            if (Console.ReadKey().Key == ConsoleKey.Y) secure = true;
+            else secure = false;
+
+            Console.WriteLine("\n");
 
             // Vygeneruje adresu pre komunikaciu so serverom
             if (secure)
-                this.serverUri = new Uri($"http://{serverName}:{serverPort}/{api}");
-            else
-                this.serverUri = new Uri($"http://{serverName}:{serverPort}/{api}");
+                return $"https://{serverName}:{serverPort}/{serverAPI}";
+
+            return $"http://{serverName}:{serverPort}/{serverAPI}";
         }
 
-        public string Append(string str)
+        public ServerInfo Append(string str)
         {
-            return ($"{serverUri.OriginalString}/{str}");
-        }
+            return new ServerInfo($"{this.AbsoluteUri}/{str}");
+        }        
     }
 }

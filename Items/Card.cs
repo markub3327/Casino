@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace Casino.Items
 {
@@ -6,22 +7,23 @@ namespace Casino.Items
     {
         public enum ESuit : byte
         {
-            Hearts = 0,     // Srdcova karta
-            Clubs = 1,      // Krizova karta (trojlistok)
-            Diamonds = 2,   // Kosostvorec
-            Spades = 3      // Pikova karta
+            Hearts,         // Srdcova karta
+            Clubs,          // Krizova karta (trojlistok)
+            Diamonds,       // Kosostvorec
+            Spades          // Pikova karta
         }
 
         public enum EColor : byte
         {
-            Black = 0,      // Cierna
-            Red = 1         // Cervena
+            Black,          // Cierna
+            Red             // Cervena
         }
 
         // Jedinecne cislo karty
+        [Key]
         public long Id { get; set; }
         // ID hraca, ktoremu patri tato karta
-        public long PlayerId { get; set; }
+        public string PlayerId { get; set; }
         // ID balicku, do ktoreho patri tato karta
         public long DeckId { get; set; }
         // Farba karty
@@ -31,8 +33,8 @@ namespace Casino.Items
             {
                 if (this.Suit == ESuit.Hearts || this.Suit == ESuit.Diamonds)
                     return EColor.Red;
-                else
-                    return EColor.Black;
+
+                return EColor.Black;
             }
         }
         // Symbol karty

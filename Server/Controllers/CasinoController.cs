@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Casino.Server.Controllers
 {
-    [Route("casino/")]
-    [ApiController]
     public class CasinoController : ControllerBase
     {
         private readonly Models.ApiContext _context;
@@ -17,89 +18,129 @@ namespace Casino.Server.Controllers
         {
             _context = context;
 
-            Console.WriteLine("Pocet hracov pri stole: {0}", _context.Players.Count());
-
-            // Zisti ci uz je vytvoreny krupier v hre
-            if (_context.Players.Count() == 0)
-            {
-                var deck = new Models.Deck(1, context);
-                _context.Decks.Add(deck);
-                _context.SaveChanges();
-
-                var croupier = new Models.Croupier
-                {
-                    Name = "Croupier",
-                    Wallet = 10000,
-                    Bet = 100
-                };
-                _context.Players.Add(croupier);
-                _context.SaveChanges();
-
-                // Kazdy hrac ma na zaciatku 2 karty
-                deck.GetCard(croupier.Id, _context);
-                deck.GetCard(croupier.Id, _context);
-                _context.SaveChanges();
-            }
+            Console.WriteLine("Main Casino's page");
+            Console.WriteLine($"Pocet hracov na serveri: {_context.Players.Count()}");
         }
 
         // GET casino/
         [HttpGet]
-        public async Task<IActionResult> Get()
+        public async Task<IActionResult> Index()
         {
-            // Vytvor pole hracov obsahujuce aj ich karty
-            var players = await _context.Players.Include(p => p.Cards).ToListAsync();
-
-            return Ok(players);
-        }
-            
-        // GET casino/3
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
-        {
-            var players = await _context.Players.Include(p => p.Cards).ToListAsync();
-
-            if (id < 0 || id >= players.Count)
+            var assembly = Assembly.GetExecutingAssembly();
+            using (var stream = assembly.GetManifestResourceStream("Casino.Server.index.html"))
             {
+                using (StreamReader reader = new StreamReader(stream))
+                {
+                    return new ContentResult
+                    {
+                        ContentType = "text/html",
+                        StatusCode = StatusCodes.Status200OK,
+                        Content = await reader.ReadToEndAsync()
+                    };
+                }
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Styles()
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            using (var stream = assembly.GetManifestResourceStream("Casino.Server.styles.css"))
+            {
+                using (StreamReader reader = new StreamReader(stream))
+                {
+                    return new ContentResult
+                    {
+                        ContentType = "text/css",
+                        StatusCode = StatusCodes.Status200OK,
+                        Content = await reader.ReadToEndAsync()
+                    };
+                }
+            }
+        }
+
+        // GET casino/players
+        // GET casino/players?token=XXX
+        [HttpGet("{controller}/players"), Produces("application/json")]
+        public async Task<IActionResult> GetPlayers([FromQuery(Name = "token")]string token)
+        {
+            Console.WriteLine($"token = {token}");
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                // Nacitaj tabulku z Db, kde plati zhodnost tokenu!
+                var players = await _context.Players.Where(p =>
+                    (p.Token == token)).Include(p => p.Cards).ToListAsync();
+
+                // Ak existuje hrac (s tokenom)
+                if (players.Count > 0)
+                {
+                    return Ok(players[0]);
+                }
                 return NotFound();
             }
+            else
+            {
+                // Vytvor pole hracov na serveri
+                var players = await _context.Players.ToListAsync();
 
-            return Ok(players[id]);
+                // Vytvor vystup JSON zo zoznamu hracov pri stole
+                return Ok(players.Select(p => new
+                {
+                    name = p.Name,
+                    gameid = p.GameId
+                }));
+            }
         }
 
-        // POST casino/
-        [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Items.Player player)
+        // POST casino/players
+        [HttpPost("{controller}/players"), Produces("application/json")]
+        public async Task<IActionResult> PostPlayer([FromBody]Items.Player player)
         {
-            // minimalna stavka je 100$
-            if (player.Bet < 100) player.Bet = 100;
+            // Nesmie byt objekt hraca prazdny
+            if (player != null)
+            {
+                // Over ci uz hrac s rovnakym menom neexistuje
+                if (!await _context.Players.ContainsAsync(player))
+                {
+                    // Vygeneruj bezpecnostny token pre komunikaciu
+                    TokenGenerator.Generate(player);
 
-            await _context.Players.AddAsync(player);
-            await _context.SaveChangesAsync();
+                    // Pridaj hraca do Db
+                    await _context.Players.AddAsync(player);
+                    await _context.SaveChangesAsync();
 
-            Console.WriteLine("player ID {0}", player.Id);
-            Console.WriteLine("new player {0}", player.Name);
-            Console.WriteLine("player's wallet {0}", player.Wallet);
-            Console.WriteLine("player's bet {0}", player.Bet);
-             
-            // Kazdy hrac ma na zaciatku 2 karty
-            var deck = _context.Decks.First();
-            await deck.GetCardAsync(player.Id, _context);
-            await deck.GetCardAsync(player.Id, _context);
-            await _context.SaveChangesAsync();
-                
-            return CreatedAtAction(nameof(Get), new { id = player.Id }, player);
-        }
-        
-        // PUT api/values/5
-        /*[HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
+                    return CreatedAtAction(nameof(GetPlayers), new { token = player.Token }, player);
+                }
+            }
+
+            return BadRequest();
         }
 
-        // DELETE api/values/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        // PUT casino/players
+        /*[HttpPut("{controller}/players"), Produces("application/json")]
+        public async Task<IActionResult> PutPlayer([FromQuery]string token, [FromBody]Items.Player player)
         {
+            // Nesmie byt objekt hraca prazdny
+            if (player != null)
+            {
+                // Nacitaj tabulku z Db, kde plati zhodnost tokenu!
+                var players = await _context.Players.Where(p => (p.Token == token)).ToListAsync();
+
+                // Ak existuje v Db hrac (s tokenom)
+                if (players.Count > 0)
+                {
+                    // Aktualizuj vyber hracovej hry
+                    players[0].GameId = player.GameId;
+
+                    // Uloz zmeny profilu hraca do Db
+                    await _context.SaveChangesAsync();
+
+                    return NoContent();
+                }
+            }
+
+            return BadRequest();
         }*/
     }
 }

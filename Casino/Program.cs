@@ -13,18 +13,20 @@ namespace Casino
     public class Program
     {
         // Referencia na lokalneho hraca, s ktorym hram hru
-        private static Items.Player myPlayer;
+        public static Items.Player myPlayer;
         
-        private static Client.Client client;
-
         // Hlavne menu
         private static Menu.ListMenu mainMenu;
 
+        // Informacie o serveri
+        private static Client.ServerInfo baseUri = new Client.ServerInfo("localhost", "5000", "casino", false);
+
+        // Hlavna funkcia main hry
         public static void Main(string[] args)
         {
             // Encoding
-            Console.InputEncoding = System.Text.Encoding.Default;
-            Console.OutputEncoding = System.Text.Encoding.Default;
+            //Console.InputEncoding = System.Text.Encoding.Default;
+            //Console.OutputEncoding = System.Text.Encoding.Default;
 
             // Vytvori hlavne menu
             CreateMainMenu();
@@ -48,8 +50,9 @@ namespace Casino
             {
                 Items = new List<Menu.MenuItem>
                 {
-                    new Menu.MenuItem { Text = "New player", IsEnabled = false, Action = NewPlayer },
                     new Menu.MenuItem { Key = ConsoleKey.F2, Text = "Connect to server", IsEnabled = true, Action = Connect },
+                    new Menu.MenuItem { Text = "New game", IsEnabled = false, Action = NewGame },
+                    new Menu.MenuItem { Key = ConsoleKey.F3, Text = "New player", IsEnabled = false, Action = NewPlayer },
                     new Menu.MenuItem { Text = "Create new server", IsEnabled = true },
                     new Menu.MenuItem { Text = "Show profile", IsEnabled = false, Action = Profile },
                     new Menu.MenuItem { Key = ConsoleKey.F1, Text = "About", IsEnabled = true, Action = About },
@@ -58,68 +61,120 @@ namespace Casino
             };
         }
 
-        // Registracia noveho hraca
-        private static void NewPlayer()
-        {
-            string name, betS;
-            long bet;
-
-            // Zadajte udaje o novom hracovi
-            do {
-                // Zadajte meno svojho hraca
-                Console.Write("Enter player's name: ");
-                name = Console.ReadLine();
-
-                Console.Write("Enter first bet: ");
-                betS = Console.ReadLine();
-            } while (name == string.Empty || betS == string.Empty || !long.TryParse(betS, out bet));
-
-            Console.WriteLine();
-
-            // Pridaj hraca k stolu
-            myPlayer = client.AddPlayerAsync(new Items.Player
-            {
-                Bet = bet,
-                Name = name,
-                Wallet = 10000
-            }).Result;
-
-            // Ak sa podarilo pridat hraca k stolu povol zobrazenie jeho profilu
-            if (myPlayer != null)
-            {
-                mainMenu.Items[3].IsEnabled = true;
-                mainMenu.Items[0].IsEnabled = false;
-            }
-            else
-            {
-                mainMenu.Items[3].IsEnabled = false;
-            }
-        }
-
         // Pripoj sa na server
         private static void Connect()
         {
             // Vytvor spojenie
-            client = new Client.Client(new Client.ServerInfo("localhost", "5000", "casino"));
-
-            // Ak sa pripojil povol vytvorenie hraca
-            if (client.IsConnected)
+            using (var client = new Client.Client())
             {
-                mainMenu.Items[0].IsEnabled = true;
-                mainMenu.Items[2].IsEnabled = false;
-            }
-            else
-            {
-                mainMenu.Items[0].IsEnabled = false;
-                mainMenu.Items[2].IsEnabled = true;
+                // Ak sa pripojil povol vytvorenie hraca
+                if (client.TryConnection(baseUri))
+                {
+                    mainMenu.Items[2].IsEnabled = true; // novy hrac
+                    mainMenu.Items[3].IsEnabled = false; // novy server
+                }
+                else
+                {
+                    mainMenu.Items[2].IsEnabled = false;
+                    mainMenu.Items[3].IsEnabled = true;
+                }
             }
         }
 
-        // Profil hraca
-        private static void Profile()
+        // Registracia noveho hraca
+        private static void NewPlayer()
         {
-            myPlayer = client.GetPlayerAsync(myPlayer.Id - 1).Result;         // POCITAME V Db od 1 a v C# od 0 !!!
-            myPlayer.Print();
+            string name;
+
+            // Zadajte udaje o novom hracovi
+            do
+            {
+                // Zadajte meno svojho hraca
+                Console.Write("Enter player's name: ");
+                name = Console.ReadLine();
+            } while (name == string.Empty);
+
+            Console.WriteLine();
+
+            // Vytvor spojenie
+            using (var client = new Client.Client())
+            {
+                // Vytvor objekt hraca
+                myPlayer = client.AddPlayerAsync(baseUri.Append("players"), new Items.Player
+                {
+                    Name = name,
+                    Wallet = 10000,  // Novy hrac dostava 10000$
+                    State = Items.Player.EState.None
+                }).Result;
+
+                // Ak sa podarilo pridat hraca do kasina povol zobrazenie jeho profilu a novu hru
+                if (myPlayer != null)
+                {
+                    mainMenu.Items[1].IsEnabled = true;     // nova hra
+                    mainMenu.Items[2].IsEnabled = false;    // novy hrac
+                    mainMenu.Items[4].IsEnabled = true;     // profil hraca
+
+                    ShowWarning("Adding player was successful.");
+                    Console.WriteLine("\n");
+                }
+                else
+                {
+                    ShowError($"Player with name '{name}' cannot be created.");
+                    Console.WriteLine();
+                    ShowWarning("Maybe player already exist on server.");
+                    Console.WriteLine("\n");
+                }
+            }            
+        }
+
+        // Zacni hrat novu hru
+        private static void NewGame()
+        {
+            // Vytvor spojenie
+            using (var client = new Client.Client())
+            {
+                var games = client.GetGamesAsync(baseUri.Append("games")).Result;
+                if (games != null)
+                {
+                    var gameMenu = new Menu.ListMenu("Game menu")
+                    {
+                        Items = new List<Menu.MenuItem>()
+                    };
+
+                    foreach (var g in games)
+                    {
+                        gameMenu.AddItem(new Menu.MenuItem { Text = g.Name, IsEnabled = true, Action = () => SelectGame(g.Name) });
+                    }
+
+                    gameMenu.InvokeResult().Wait();
+                }
+            }
+        }
+
+        // Akcia podla nazvu hry
+        private static void SelectGame(string name)
+        {
+            if (name == "Blackjack")
+            {
+                var game = new Games.Blackjack(baseUri.Append("blackjack"));
+
+                game.Play();
+            }
+        }
+
+        // Zobraz profil hraca  
+        public static void Profile()
+        {
+            // Vytvor spojenie
+            using (var client = new Client.Client())
+            {
+                var newPlayer = client.GetPlayerAsync(baseUri.Append($"players?token={Uri.EscapeDataString(myPlayer.Token)}")).Result;
+                if (newPlayer != null)
+                {
+                    myPlayer = newPlayer;
+                    myPlayer.Print();
+                }
+            }
         }
 
         // Hlavicka
@@ -138,10 +193,7 @@ namespace Casino
             Console.Clear();
 
             Console.Write("Welcome to ");
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.BackgroundColor = ConsoleColor.Black;
-            Console.WriteLine("Digital AI Casino");
-            Console.ResetColor();
+            Head();
 
             Console.WriteLine("Martin Horvath \u00A9 Copyright 2019 MIT");
             Console.WriteLine("Website: https://github.com/marhor3327/Casino.git");

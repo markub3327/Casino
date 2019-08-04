@@ -20,7 +20,7 @@
     "Server": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "casino/",
+      "launchUrl": "/",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },

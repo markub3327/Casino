@@ -10,121 +10,91 @@ using System.Text;
 
 namespace Casino.Client
 {
-    public class Client
+    public class Client : HttpClient
     {
-        // Trieda weboveho klienta
-        private readonly HttpClient clientService = new HttpClient();
-
-        // Info o serveri
-        private ServerInfo serverInfo;
-
-        // Stav pripojenie
-        public bool IsConnected { get; private set; }
-
         public Client()
         {
-            // HttpClient
-            clientService.DefaultRequestHeaders.Accept.Clear();
-            clientService.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            // Media typ definovany v hlavicke
+            this.DefaultRequestHeaders.Accept.Clear();
+            this.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        }        
 
-            this.IsConnected = false;
-        }
-
-        public Client(ServerInfo info)
+        // Stav pripojenia
+        public bool TryConnection(ServerInfo info)
         {
-            // HttpClient
-            clientService.DefaultRequestHeaders.Accept.Clear();
-            clientService.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            // uloz adresu
-            this.serverInfo = info;
-
-            // Over server
-            if (!TryConnection())
+            var msg = this.GetAsync(info).Result;
+            if (msg.IsSuccessStatusCode)
             {
-                this.serverInfo = null;
-                this.IsConnected = false;
+                Program.ShowWarning("Connection to server was successful.");
+                Console.WriteLine("\n");
+                return true;
             }
-            else
-            {
-                this.IsConnected = true;
-            }
+            return false;
         }
 
-        public bool TryConnection()
+        // Stiahni zoznam hracov
+        public async Task<List<Items.Player>> GetPlayersAsync(ServerInfo info)
         {
-            if (GetPlayersAsync().Result == null)
-                return false;
-
-            Casino.Program.ShowWarning("Connection to server was successful");
-            Console.WriteLine("\n");
-
-            return true;
-        }
-
-        public void SetServer(ServerInfo info)
-        {
-            this.serverInfo = info;
-
-            // Vyskusaj sa spojit so serverom
-            TryConnection();
-        }
-
-        public async Task<List<Items.Player>> GetPlayersAsync()
-        {
-            // Pokusi sa nacitat zoznam hracov
             try
             {
-
-                // Posli HTTP GET na server
-                using (var stream = await clientService.GetStreamAsync(serverInfo.serverUri))
+                // Posli HTTP GET na server                
+                using (var msg = await this.GetAsync(info))
                 {
-                    using (StreamReader streamReader = new StreamReader(stream))
+                    if (msg.IsSuccessStatusCode)
                     {
-                        using (JsonReader reader = new JsonTextReader(streamReader))
+                        using (StreamReader streamReader = new StreamReader(await msg.Content.ReadAsStreamAsync()))
                         {
-                            // JSON serializer
-                            JsonSerializer serializer = new JsonSerializer();
+                            using (JsonReader reader = new JsonTextReader(streamReader))
+                            {
+                                // JSON serializer
+                                JsonSerializer serializer = new JsonSerializer();
 
-                            // Nacitaj JSON spravu do zoznamu objektov
-                            // JSON size doesn't matter because only a small piece is read at a time from the HTTP request
-                            var players = serializer.Deserialize<List<Items.Player>>(reader);
-
-                            // Vypis hracov
-                            //foreach (var player in players)
-                            //{
-                            //    player.Print();
-                            //}
-
-                            return players;
+                                // Nacitaj JSON spravu do zoznamu objektov
+                                // JSON size doesn't matter because only a small piece is read at a time from the HTTP request
+                                return serializer.Deserialize<List<Items.Player>>(reader);
+                            }
                         }
                     }
+                    return null;
                 }
             }
-            catch (Exception e) /*HttpRequestException*/
+            catch (Exception e) //HttpRequestException
             {
-                Casino.Program.ShowError("\nError with connection!!!\n\tMessage:");
+                Program.ShowError("\nError with connection!!!\n\tMessage:");
                 Console.WriteLine(" {0}", e.Message);
-
                 return null;
             }
         }
 
-        public async Task<Items.Player> GetPlayerAsync(long id)
+        // Stiahni profil hraca
+        public async Task<Items.Player> GetPlayerAsync(ServerInfo info)
         {
-            var uri = serverInfo.Append(id.ToString());
+            try
+            {
+                // Posli HTTP GET na server
+                using (var msg = await this.GetAsync(info))
+                {
+                    if (msg.IsSuccessStatusCode)
+                    {
+                        // Nacitaj JSON spravu do objektu
+                        // JSON size doesn't matter because only a small piece is read at a time from the HTTP request
+                        var newPlayer = JsonConvert.DeserializeObject<Items.Player>(await msg.Content.ReadAsStringAsync());
 
-            // Posli HTTP GET na server
-            var str = await clientService.GetStringAsync(uri);
-
-            // Nacitaj JSON spravu do objektu
-            // JSON size doesn't matter because only a small piece is read at a time from the HTTP request
-            var player = JsonConvert.DeserializeObject<Items.Player>(str);
-
-            return player;
+                        return newPlayer;
+                    }
+                    return null;
+                }
+            }
+            catch (Exception e) //HttpRequestException
+            {
+                Program.ShowError("\nError with connection!!!\n\tMessage:");
+                Console.WriteLine(" {0}", e.Message);
+                return null;
+            }
         }
 
-        public async Task<Items.Player> AddPlayerAsync(Items.Player player)
+        // Pridaj hraca
+        public async Task<Items.Player> AddPlayerAsync(ServerInfo info, Items.Player player)
         {
             // Nacitaj objekt do JSON spravy
             // JSON size doesn't matter because only a small piece is read at a time from the HTTP request
@@ -134,20 +104,106 @@ namespace Casino.Client
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             // Posli HTTP POST na server a zachyt odpoved
-            var response = await clientService.PostAsync(serverInfo.serverUri, content);
-
-            // Zapis prebehol uspesne
-            if (response.IsSuccessStatusCode)
+            using (var response = await this.PostAsync(info, content))
             {
-                var newPlayer = JsonConvert.DeserializeObject<Items.Player>(await response.Content.ReadAsStringAsync());
+                // Zapis prebehol uspesne
+                if (response.IsSuccessStatusCode)
+                {
+                    var newPlayer = JsonConvert.DeserializeObject<Items.Player>(await response.Content.ReadAsStringAsync());
 
-                // Vypis hraca
-                newPlayer.Print();
-
-                return newPlayer;
+                    return newPlayer;
+                }
             }
+            return null;
+        }
 
-            return null;            
+        // Nacitaj zoznam hier
+        public async Task<List<Items.Game>> GetGamesAsync(ServerInfo info)
+        {
+            try
+            {
+                // Posli HTTP GET na server                
+                using (var msg = await this.GetAsync(info))
+                {
+                    if (msg.IsSuccessStatusCode)
+                    {
+                        using (StreamReader streamReader = new StreamReader(await msg.Content.ReadAsStreamAsync()))
+                        {
+                            using (JsonReader reader = new JsonTextReader(streamReader))
+                            {
+                                // JSON serializer
+                                JsonSerializer serializer = new JsonSerializer();
+
+                                // Nacitaj JSON spravu do zoznamu objektov
+                                // JSON size doesn't matter because only a small piece is read at a time from the HTTP request
+                                return serializer.Deserialize<List<Items.Game>>(reader);
+                            }
+                        }
+                    }
+                    return null;
+                }
+            }
+            catch (Exception e) //HttpRequestException
+            {
+                Program.ShowError("\nError with connection!!!\n\tMessage:");
+                Console.WriteLine(" {0}", e.Message);
+                return null;
+            }
+        }
+
+        // Nacitaj zoznam akcii
+        public async Task<List<Items.Action>> GetActionsAsync(ServerInfo info)
+        {
+            try
+            {
+                // Posli HTTP GET na server                
+                using (var msg = await this.GetAsync(info))
+                {
+                    if (msg.IsSuccessStatusCode)
+                    {
+                        using (StreamReader streamReader = new StreamReader(await msg.Content.ReadAsStreamAsync()))
+                        {
+                            using (JsonReader reader = new JsonTextReader(streamReader))
+                            {
+                                // JSON serializer
+                                JsonSerializer serializer = new JsonSerializer();
+
+                                // Nacitaj JSON spravu do zoznamu objektov
+                                // JSON size doesn't matter because only a small piece is read at a time from the HTTP request
+                                return serializer.Deserialize<List<Items.Action>>(reader);
+                            }
+                        }
+                    }
+                    return null;
+                }
+            }
+            catch (Exception e) //HttpRequestException
+            {
+                Program.ShowError("\nError with connection!!!\n\tMessage:");
+                Console.WriteLine(" {0}", e.Message);
+                return null;
+            }
+        }
+
+        public async Task<bool> UpdatePlayer(ServerInfo info, Items.Player player)
+        {
+            // Nacitaj objekt do JSON spravy
+            // JSON size doesn't matter because only a small piece is read at a time from the HTTP request
+            var json = JsonConvert.SerializeObject(player);
+
+            // Obsah spravy
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            // Posli HTTP POST na server a zachyt odpoved
+            using (var response = await this.PutAsync(info, content))
+            {
+                // Zapis prebehol uspesne
+                if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

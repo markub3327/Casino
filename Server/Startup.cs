@@ -30,7 +30,8 @@ namespace Casino.Server
             services.AddDbContext<Models.ApiContext>(opt =>
                             opt.UseInMemoryDatabase("CasinoDb"));
 
-            services.AddControllers();
+            services.AddControllers()
+                .AddNewtonsoftJson();   // JSON.NET use in older version of ASP.NETCore                
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -47,14 +48,19 @@ namespace Casino.Server
             }
 
             //app.UseHttpsRedirection();
-        
+
+            // Add the endpoint routing matcher middleware to the request pipeline
             app.UseRouting();
 
+            // Add the authorization middleware to the request pipeline
             app.UseAuthorization();
 
+            // Add endpoints to the request pipeline
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllers();
+                // Default root URL  (http://localhost:5000)
+                endpoints.MapControllerRoute("default", "/casino", new { controller = "Casino", action = "Index" });
+                endpoints.MapControllerRoute("default_styles", "/casino/styles.css", new { controller = "Casino", action = "Styles" });
             });
         }        
     }

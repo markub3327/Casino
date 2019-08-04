@@ -11,6 +11,8 @@ namespace Casino.Menu
 
         private int SelectedIndex { get; set; }
 
+        private string Title;
+
         // Vybrana polozka
         public MenuItem SelectedItem
         {
@@ -19,8 +21,9 @@ namespace Casino.Menu
             }
         }
 
-        public ListMenu()
+        public ListMenu(string title = "Menu")
         {
+            this.Title = title;
             this.Items = new List<MenuItem>();
         }
 
@@ -37,37 +40,39 @@ namespace Casino.Menu
             if (Items.Contains(item))
                 Items.Remove(item);
         }
-
-        public async Task<MenuItem> ResultAsync()
-        {
-            return await Task.FromResult<MenuItem>(this.Result());
-        }
-
+      
         // Vykona uzivatelom zvolenu akciu
         public Task InvokeResult()
         {
             return Task.Run(() =>
             {
-                this.Result();
-                this.SelectedItem.Action();
+                this.Print();
+                if (this.SelectedItem != null)
+                    this.SelectedItem.Action();
             });
         }
 
         // Vyber z menu
-        public MenuItem Result()
+        public void Print()
         {
-            Console.WriteLine("===============================================");
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.BackgroundColor = ConsoleColor.Black;
-            Console.WriteLine("                       Menu                    ");
-            Console.ResetColor();
-            Console.WriteLine("===============================================");
+            // Vzor nadpisu
+            var titleS = $"                        {Title}                        ";
+
+            for (int i = 0; i < titleS.Length; i++)
+                Console.Write("=");
+            Console.WriteLine();
+
+            // Nadpis
+            //Console.CursorLeft = (titleS.Length - Title.Length);
+            Program.ShowError(titleS);
+            Console.WriteLine();
+
+            for (int i = 0; i < titleS.Length; i++)
+                Console.Write("=");
+            Console.WriteLine();
 
             // Odsadenie poloziek menu od laveho okraja okna
             int? alignmentLeft = null;
-
-            // Povodna vertikalna poloha kurzora
-            var originalTop = Console.CursorTop;
 
             // Nastav vyber podla kurzora
             SelectedIndex = Items.Count - 1;
@@ -75,21 +80,17 @@ namespace Casino.Menu
             // Vypis poloziek menu
             for (int i = 0; i < Items.Count; i++)
             {
-                if (i != SelectedIndex)
-                {
-                    // Vypis
-                    alignmentLeft = this.Print(i, false, alignmentLeft);
-                    // Vlozi novy riadok ked nasleduje dalsia polozka inak vrati kurzor na zaciatok
-                    Console.WriteLine();
-                }
-                else
-                {
-                    // Vypis
-                    alignmentLeft = this.Print(i, true, alignmentLeft);
-                    // Vrati kurzor na zaciatok riadka
-                    Console.CursorLeft = 0;
-                }
+                // Vypis
+                this.Print(i, (i == SelectedIndex), ref alignmentLeft);
+                // Vlozi novy riadok ked nasleduje dalsia polozka
+                Console.WriteLine();
             }
+
+            // Nastav kurzor na poslednu polozku
+            Console.SetCursorPosition(0, (Console.CursorTop - 1));
+
+            // Zneviditelni kurzor
+            Console.CursorVisible = false;
 
             // Vyber zo zoznamu
             while (true)
@@ -104,12 +105,12 @@ namespace Casino.Menu
                         {
                             if (SelectedIndex != 0)
                             {
-                                alignmentLeft = this.Print(SelectedIndex, false, alignmentLeft);
+                                this.Print(SelectedIndex, false, ref alignmentLeft);
 
                                 SelectedIndex--;
 
-                                Console.SetCursorPosition(0, (originalTop + SelectedIndex));
-                                alignmentLeft = this.Print(SelectedIndex, true, alignmentLeft);
+                                Console.SetCursorPosition(0, (Console.CursorTop - 1));
+                                this.Print(SelectedIndex, true, ref alignmentLeft);
                                 Console.CursorLeft = 0;
                             }
                             else
@@ -121,12 +122,12 @@ namespace Casino.Menu
                         {
                             if (SelectedIndex != (Items.Count - 1))
                             {
-                                alignmentLeft = this.Print(SelectedIndex, false, alignmentLeft);
+                                this.Print(SelectedIndex, false, ref alignmentLeft);
 
                                 SelectedIndex++;
 
-                                Console.SetCursorPosition(0, (originalTop + SelectedIndex));
-                                alignmentLeft = this.Print(SelectedIndex, true, alignmentLeft);
+                                Console.SetCursorPosition(0, (Console.CursorTop + 1));
+                                this.Print(SelectedIndex, true, ref alignmentLeft);
                                 Console.CursorLeft = 0;
                             }
                             else
@@ -138,8 +139,12 @@ namespace Casino.Menu
                         {
                             if (SelectedItem.IsEnabled)
                             {
+                                // Vycisti konzolu
                                 Console.Clear();
-                                return SelectedItem;
+                                // Zviditelni kurzor
+                                Console.CursorVisible = true;
+                                // Koniec vyberu
+                                return;
                             }
                             break;
                         }
@@ -147,14 +152,16 @@ namespace Casino.Menu
                         {
                             for (int i = 0; i < Items.Count; i++)
                             {
-                                if (key == 0)
-                                    continue;
-
                                 if (key == Items[i].Key && Items[i].IsEnabled)
                                 {
+                                    // Uloz index vybranej polozky
                                     SelectedIndex = i;
+                                    // Vycisti konzolu
                                     Console.Clear();
-                                    return SelectedItem;
+                                    // Zviditelni kurzor
+                                    Console.CursorVisible = true;
+                                    // Koniec vyberu
+                                    return;
                                 }
                             }
                             Console.Beep();
@@ -165,7 +172,7 @@ namespace Casino.Menu
         }
 
         // Vypis polozky
-        private int Print(int index, bool isSelected, int? alignmentLeft)
+        private void Print(int index, bool isSelected, ref int? alignmentLeft)
         {
             if (Items[index].Key != 0)
                 Console.Write($" ({Items[index].Key.ToString()})\t\t");
@@ -192,8 +199,6 @@ namespace Casino.Menu
             }
             else
                 Console.Write($"{Items[index].Text}");
-
-            return alignmentLeft.Value;
         }
     }
 }
