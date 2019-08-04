@@ -15,9 +15,15 @@ namespace Casino.Server
     {
         public static void Main(string[] args)
         {
+            Run(args);
+        }
+
+        public static void Run(string[] args)
+        {
             // Uvodna sprava
             Head();
 
+            // Novy server
             CreateHostBuilder(args).Build().Run();
         }
 

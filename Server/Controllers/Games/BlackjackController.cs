@@ -179,7 +179,9 @@ namespace Casino.Server.Controllers
                     name = p.Name,
                     bet = p.Bet,
                     cards = p.Cards.Select(c => new { suit = c.Suit, value = c.Value }),
-                    state = p.State
+                    state = p.State,
+                    gameid = p.GameId,
+                    actionid = p.ActionId
                 }));
             }
         }

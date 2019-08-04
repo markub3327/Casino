@@ -96,9 +96,12 @@ namespace Casino.Games
                             // Ukonci hru
                             break;
                         }
+                        if (Program.myPlayer.ActionId != "Stand")
+                        {
+                            // Zavolaj menu akcii hry
+                            menu.InvokeResult().Wait();
+                        }
 
-                        // Zavolaj menu akcii hry
-                        menu.InvokeResult().Wait();
                         // Aktualizuj profil hraca podla vybranej akcie
                         UpdatePlayer();
                     }
@@ -128,7 +131,7 @@ namespace Casino.Games
 
             using (var client = new Client.Client())
             {
-                if (client.UpdatePlayer(info.Append($"players?token={Uri.EscapeDataString(Program.myPlayer.Token)}"), Program.myPlayer).Result)
+                if (client.UpdatePlayerAsync(info.Append($"players?token={Uri.EscapeDataString(Program.myPlayer.Token)}"), Program.myPlayer).Result)
                 {
                     if ((newPlayer = client.GetPlayerAsync(info.Append($"players?token={Uri.EscapeDataString(Program.myPlayer.Token)}")).Result) != null)
                     {

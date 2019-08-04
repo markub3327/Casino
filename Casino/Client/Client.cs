@@ -185,7 +185,7 @@ namespace Casino.Client
             }
         }
 
-        public async Task<bool> UpdatePlayer(ServerInfo info, Items.Player player)
+        public async Task<bool> UpdatePlayerAsync(ServerInfo info, Items.Player player)
         {
             // Nacitaj objekt do JSON spravy
             // JSON size doesn't matter because only a small piece is read at a time from the HTTP request

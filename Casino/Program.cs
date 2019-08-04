@@ -51,14 +51,20 @@ namespace Casino
                 Items = new List<Menu.MenuItem>
                 {
                     new Menu.MenuItem { Key = ConsoleKey.F2, Text = "Connect to server", IsEnabled = true, Action = Connect },
-                    new Menu.MenuItem { Text = "New game", IsEnabled = false, Action = NewGame },
-                    new Menu.MenuItem { Key = ConsoleKey.F3, Text = "New player", IsEnabled = false, Action = NewPlayer },
-                    new Menu.MenuItem { Text = "Create new server", IsEnabled = true },
+                    new Menu.MenuItem { Key = ConsoleKey.F3, Text = "New game", IsEnabled = false, Action = NewGame },
+                    new Menu.MenuItem { Key = ConsoleKey.F4, Text = "New player", IsEnabled = false, Action = NewPlayer },
+                    new Menu.MenuItem { Key = ConsoleKey.F5, Text = "Create new server", IsEnabled = true, Action = NewServer },
                     new Menu.MenuItem { Text = "Show profile", IsEnabled = false, Action = Profile },
                     new Menu.MenuItem { Key = ConsoleKey.F1, Text = "About", IsEnabled = true, Action = About },
                     new Menu.MenuItem { Key = ConsoleKey.Escape, Text = "Exit", IsEnabled = true, Action = () => Exit(0)  }
                 }
             };
+        }
+
+        // Novy server
+        private static void NewServer()
+        {
+            Server.Program.Run(null);
         }
 
         // Pripoj sa na server
