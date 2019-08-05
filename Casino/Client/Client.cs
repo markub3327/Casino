@@ -17,19 +17,28 @@ namespace Casino.Client
             // Media typ definovany v hlavicke
             this.DefaultRequestHeaders.Accept.Clear();
             this.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        }        
+        }
 
         // Stav pripojenia
         public bool TryConnection(ServerInfo info)
         {
-            var msg = this.GetAsync(info).Result;
-            if (msg.IsSuccessStatusCode)
+            try
             {
-                Program.ShowWarning("Connection to server was successful.");
-                Console.WriteLine("\n");
-                return true;
+                var msg = this.GetAsync(info).Result;
+                if (msg.IsSuccessStatusCode)
+                {
+                    Program.ShowWarning("Connection to server was successful.");
+                    Console.WriteLine("\n");
+                    return true;
+                }
+                return false;
             }
-            return false;
+            catch (Exception e) //HttpRequestException
+            {
+                Program.ShowError("\nError with connection!!!\n\tMessage:");
+                Console.WriteLine(" {0}", e.Message);
+                return false;
+            }
         }
 
         // Stiahni zoznam hracov
@@ -96,25 +105,57 @@ namespace Casino.Client
         // Pridaj hraca
         public async Task<Items.Player> AddPlayerAsync(ServerInfo info, Items.Player player)
         {
-            // Nacitaj objekt do JSON spravy
-            // JSON size doesn't matter because only a small piece is read at a time from the HTTP request
-            var json = JsonConvert.SerializeObject(player);
-
-            // Obsah spravy
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            // Posli HTTP POST na server a zachyt odpoved
-            using (var response = await this.PostAsync(info, content))
+            try
             {
-                // Zapis prebehol uspesne
-                if (response.IsSuccessStatusCode)
-                {
-                    var newPlayer = JsonConvert.DeserializeObject<Items.Player>(await response.Content.ReadAsStringAsync());
+                // Nacitaj objekt do JSON spravy
+                // JSON size doesn't matter because only a small piece is read at a time from the HTTP request
+                var json = JsonConvert.SerializeObject(player);
 
-                    return newPlayer;
+                // Obsah spravy
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                // Posli HTTP POST na server a zachyt odpoved
+                using (var response = await this.PostAsync(info, content))
+                {
+                    // Zapis prebehol uspesne
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var newPlayer = JsonConvert.DeserializeObject<Items.Player>(await response.Content.ReadAsStringAsync());
+
+                        return newPlayer;
+                    }
                 }
+                return null;
             }
-            return null;
+            catch (Exception e) //HttpRequestException
+            {
+                Program.ShowError("\nError with connection!!!\n\tMessage:");
+                Console.WriteLine(" {0}", e.Message);
+                return null;
+            }
+        }
+
+        public async Task<bool> RemovePlayerAsync(ServerInfo info)
+        {
+            try
+            {
+                // Posli HTTP POST na server a zachyt odpoved
+                using (var response = await this.DeleteAsync(info))
+                {
+                    // Zapis prebehol uspesne
+                    if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch (Exception e) //HttpRequestException
+            {
+                Program.ShowError("\nError with connection!!!\n\tMessage:");
+                Console.WriteLine(" {0}", e.Message);
+                return false;
+            }
         }
 
         // Nacitaj zoznam hier
@@ -187,23 +228,32 @@ namespace Casino.Client
 
         public async Task<bool> UpdatePlayerAsync(ServerInfo info, Items.Player player)
         {
-            // Nacitaj objekt do JSON spravy
-            // JSON size doesn't matter because only a small piece is read at a time from the HTTP request
-            var json = JsonConvert.SerializeObject(player);
-
-            // Obsah spravy
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            // Posli HTTP POST na server a zachyt odpoved
-            using (var response = await this.PutAsync(info, content))
+            try
             {
-                // Zapis prebehol uspesne
-                if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+                // Nacitaj objekt do JSON spravy
+                // JSON size doesn't matter because only a small piece is read at a time from the HTTP request
+                var json = JsonConvert.SerializeObject(player);
+
+                // Obsah spravy
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                // Posli HTTP POST na server a zachyt odpoved
+                using (var response = await this.PutAsync(info, content))
                 {
-                    return true;
+                    // Zapis prebehol uspesne
+                    if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+                    {
+                        return true;
+                    }
                 }
+                return false;
             }
-            return false;
+            catch (Exception e) //HttpRequestException
+            {
+                Program.ShowError("\nError with connection!!!\n\tMessage:");
+                Console.WriteLine(" {0}", e.Message);
+                return false;
+            }
         }
     }
 }
