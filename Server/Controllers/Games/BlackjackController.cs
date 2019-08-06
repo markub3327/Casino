@@ -39,54 +39,6 @@ namespace Casino.Server.Controllers
 
             // Pridaj krupiera ak neexistuje
             AddCroupier();
-
-            // Hraci, ktori skoncili hru
-            var standPlayers = _context.Players.Where(p =>
-                (p.ActionId == "Stand" && p.Name != "Croupier-Blackjack" && p.GameId == "Blackjack"));
-
-            // Ak existuju hraci
-            if (standPlayers.Any())
-            {
-                // Vsetci hraci aktivny v hre
-                var players = _context.Players.Where(p =>
-                    (p.GameId == "Blackjack" && p.Name != "Croupier-Blackjack"))
-                    .Include(p => p.Cards);
-
-                // Ak vsetci hraci skoncili hru, hra krupier
-                if (standPlayers.Count() == players.Count())
-                {
-                    // Hra krupiera
-                    CroupierPlay();
-
-                    // Vyhodnotenie hry
-                    foreach (var p in players)
-                    {
-                        var res = Rules(p);
-
-                        // Vyhra
-                        if (res == 1)
-                        {
-                            Win(p);
-                        }
-                        // Prehra
-                        else if (res == -1)
-                        {
-                            Lose(p);
-                        }
-                        // Remiza
-                        else
-                        {
-                            Draw(p);
-                        }
-                    }
-
-                    // Uvolni krupierove karty
-                    FreeCards(_croupier);
-
-                    // Uloz zmeny do Db
-                    _context.SaveChanges();
-                }
-            }
         }
 
         // GET: casino/blackjack
@@ -137,30 +89,61 @@ namespace Casino.Server.Controllers
         [HttpGet("casino/{controller}/players"), Produces("application/json")]
         public async Task<IActionResult> GetPlayers([FromQuery(Name = "token")]string token)
         {
-            if (!string.IsNullOrEmpty(token))
-            {
-                // Nacitaj tabulku z Db, kde plati zhodnost tokenu!
-                var playerDb = (await _context.Players.Where(p =>
-                    (p.Token == token && p.GameId == "Blackjack"))
-                    .Include(p => p.Cards).ToArrayAsync())[0];
-
-                // Ak existuje hrac (s tokenom)
-                if (playerDb != null)
-                {
-                    // Skontroluj karty
-                    CheckCards(playerDb);
-
-                    await _context.SaveChangesAsync();
-
-                    return Ok(playerDb);
-                }
-                return NotFound();
-            }
-
             // Vytvor pole hracov pri stole obsahujuce aj ich karty
             var players = await _context.Players.Where(p => (p.GameId == "Blackjack"))
                 .Include(p => p.Cards).ToListAsync();
 
+            if (players.Count() > 1)
+            {
+                var standPlayers = players.Where(p => (p.ActionId == "Stand"));
+
+                Console.WriteLine("Hraci, ktori ukoncili hru = {0}", standPlayers.Count());
+
+                // Ak existuju hraci
+                if (standPlayers.Any())
+                {
+                    Console.WriteLine("Hraci v hre = {0}", players.Count());
+
+                    // Ak vsetci hraci skoncili hru, hra krupier
+                    if (standPlayers.Count() == (players.Count() - 1))
+                    {
+                        // Hra krupiera
+                        CroupierPlay();
+
+                        // Vyhodnotenie hry
+                        foreach (var p in players.Where(p => p.Name != "Croupier-Blackjack"))
+                        {
+                            // Skontroluj stav hry podla pravidiel
+                            Rules(p);
+
+                            // Ukonci herne kolo hraca
+                            RoundEnd(p);
+                        }
+
+                        // Vynuluj profil krupiera
+                        _croupier.Bet = 0;
+                        _croupier.ActionId = null;
+                        _croupier.State = Items.Player.EState.None;
+
+                        // Uloz zmeny do Db
+                        await _context.SaveChangesAsync();
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                // Nacitaj tabulku z Db, kde plati zhodnost tokenu!
+                var playerDb = players.First(p => (p.Token == token));
+
+                // Ak existuje hrac (s tokenom)
+                if (playerDb != null)
+                {
+                    return Ok(playerDb);
+                }
+                return NotFound();
+            }
+           
             // Vytvor vystup JSON zo zoznamu hracov pri stole
             return Ok(players.Select(p => new
             {
@@ -213,16 +196,25 @@ namespace Casino.Server.Controllers
         {
             if (player != null)
             {
+                var players = _context.Players.Where(p => (p.GameId == "Blackjack"));
+
                 // Nacitaj tabulku z Db, kde plati zhodnost tokenu!
-                var playerDb = (await _context.Players.Where(p =>
-                    (p.Token == token && p.GameId == "Blackjack"))
+                var playerDb = (await players.Where(p => (p.Token == token))
                     .Include(p => p.Cards).ToArrayAsync())[0];
 
                 // Ak existuje v Db hrac (s tokenom)
                 if (playerDb != null)
                 {
+                    // Ak hrac nehra hru
                     if (playerDb.State != Items.Player.EState.Playing)
                     {
+                        // Ak je prvym hracom u stola priprav krupierove karty
+                        if (!players.Where(p => (p.State == Items.Player.EState.Playing)).Any())
+                        {
+                            FreeCards(_croupier);
+                            GivingCards(_croupier, 1).Wait();
+                        }
+
                         // Aktualizuje sa vyska stavky, ktoru ovplyvnuje hrac pocas hry
                         // Minimalna stavka je 100$
                         if (player.Bet < 100) playerDb.Bet = 100;
@@ -232,7 +224,8 @@ namespace Casino.Server.Controllers
                         playerDb.State = Items.Player.EState.Playing;
 
                         // Vezmi karty
-                        await GivingCards(playerDb);
+                        FreeCards(playerDb);
+                        await GivingCards(playerDb, 2);
                     }
                     else
                     {
@@ -244,47 +237,44 @@ namespace Casino.Server.Controllers
                         {
                             case "Hit":
                                 {
-                                    var deck = _context.Decks.First();
-                                    await deck.GetCard(playerDb.Name, _context);
-                                    await _context.SaveChangesAsync();
-
+                                    await GivingCards(playerDb, 1);
                                     break;
                                 }
                             case "Stand":
                                 {
                                     Console.WriteLine($"Player {playerDb.Name} end the game.");
-
-                                    // Neaktivny
-                                    playerDb.State = Items.Player.EState.None;
-
                                     break;
                                 }
                             case "Double":
                                 {
                                     // Hrac dostane este kartu a hra konci
-                                    var deck = _context.Decks.First();
-                                    await deck.GetCard(playerDb.Name, _context);
-                                    await _context.SaveChangesAsync();
+                                    await GivingCards(playerDb, 1);
 
                                     // Zdvojnasobi stavku
                                     playerDb.Bet <<= 1;
 
                                     // ... potom konci hru ...
                                     playerDb.ActionId = "Stand";
-                                    // Neaktivny
-                                    playerDb.State = Items.Player.EState.None;
 
                                     break;
                                 }
                             case "Exit":
                                 {
-                                    _croupier.Wallet += playerDb.Bet >> 1;
-                                    playerDb.Wallet -= playerDb.Bet >> 1;
-                                    playerDb.State = Items.Player.EState.None;
-                                    RoundEnd(playerDb);
+                                    if (playerDb.Cards.Count() == 2)
+                                    {
+                                        // Hrac ukoncil hru
+                                        playerDb.State = Items.Player.EState.None;
 
-                                    // Uvolni krupierove karty
-                                    FreeCards(_croupier);
+                                        // Ukonci kolo
+                                        RoundEnd(playerDb);
+
+                                        // Strhni polovicu stavky
+                                        _croupier.Wallet += playerDb.Bet >> 1;
+                                        playerDb.Wallet -= playerDb.Bet >> 1;
+
+                                        // Uvolni hracove karty
+                                        FreeCards(playerDb);
+                                    }
 
                                     break;
                                 }
@@ -314,9 +304,11 @@ namespace Casino.Server.Controllers
                 return NotFound();
             }
 
-            RoundEnd(player);
-            player.GameId = null;
+            // Vynuluj stav hraca
             player.State = Items.Player.EState.None;
+            RoundEnd(player);
+            FreeCards(player);
+            player.GameId = null;
 
             await _context.SaveChangesAsync();
 
@@ -328,7 +320,8 @@ namespace Casino.Server.Controllers
         {
             if (player.Cards.Any())
             {
-                foreach (var c in player.Cards) // Uvolni karty
+                // Uvolni karty
+                foreach (var c in player.Cards)
                 {
                     c.PlayerId = string.Empty;
                 }
@@ -336,30 +329,35 @@ namespace Casino.Server.Controllers
         }
 
         // Pravidla hry Blackjack
-        private int Rules(Items.Player player)
+        private void Rules(Items.Player player)
         {
             var sum = player.CardSum;
             var Csum = _croupier.CardSum;
 
+            Console.WriteLine($"sum = {sum}");
+            Console.WriteLine($"Csum = {Csum}");
+
             // Hrac prehral - koniec hry ak prekrocil 21
             if (sum > 21)
             {
-                return -1;
+                player.State = Items.Player.EState.Lose;
             }
             // Hrac vyhral - koniec hry ak krupier prekrocil 21 a hrac nie
             // Ak ma hrac vyssi sucet kariet ako krupier
-            if ((Csum > 21) || (sum > Csum))
+            else if ((Csum > 21) || (sum > Csum))
             {
-                return 1;
-            }            
-            // Ak ma rovnaky sucet ako krupier vrati sa mu stavka
-            if (sum == Csum)
-            {
-                return 0;
+                player.State = Items.Player.EState.Win;
             }
-
+            // Ak ma rovnaky sucet ako krupier vrati sa mu stavka
+            else if (sum == Csum)
+            {
+                player.State = Items.Player.EState.Draw;
+            }
             // Inak prehra
-            return -1;
+            else
+            {
+                player.State = Items.Player.EState.Lose;
+            }
         }
 
         private void AddCroupier()
@@ -390,106 +388,74 @@ namespace Casino.Server.Controllers
                 // Vygeneruj herne balicky kariet
                 // Id v Db sa pocita od 1
                 //for (int i = 1; i <= 1; i++)
-                //{
-                // Vytvor objekt balicka
-                var deck = new Models.Deck { CroupierId = _croupier.Name };
+                {
+                    // Vytvor objekt balicka
+                    var deck = new Models.Deck { CroupierId = _croupier.Name };
 
-                // Pridaj balicek do Db
-                _context.Decks.Add(deck);
-                _context.SaveChanges();
+                    // Pridaj balicek do Db
+                    _context.Decks.Add(deck);
 
-                // Vygeneruj karty
-                deck.Create(_context);
-                _context.SaveChanges();
-                //}
-
-                Console.WriteLine($"DeckId: {deck.Id}");
+                    // Vygeneruj karty
+                    deck.Create(_context);
+                    _context.SaveChanges();
+                }
 
                 // Krupier zacina s jednou kartou
-                deck.GetCard(_croupier.Name, _context).Wait();
-                _context.SaveChanges();
+                GivingCards(_croupier, 1).Wait();
             }
             else
             {
                 // Obnov krupiera pre dalsie hry
                 _croupier = croupier.First();
-
-                if (!_croupier.Cards.Any())
-                {
-                    // Krupier zacina s jednou kartou
-                    var deck = _context.Decks.First();
-                    deck.GetCard(_croupier.Name, _context).Wait();
-                    _context.SaveChanges();
-                }
             }
         }
 
         // Rozdavanie prvych kariet
-        private async Task GivingCards(Items.Player player)
+        private async Task GivingCards(Items.Player player, int count)
         {
-            if (!player.Cards.Any())
-            {
-                // Novy hrac ak este nedostal karty
-                var deck = _context.Decks.First();
+            // Novy hrac ak este nedostal karty
+            var deck = _context.Decks.First();
 
-                // Hraci zacinaju s dvomi kartami
-                await deck.GetCard(player.Name, _context);
+            // Hraci zacinaju s dvomi kartami
+            for (int i = 0; i < count; i++)        
                 await deck.GetCard(player.Name, _context);
 
-                await _context.SaveChangesAsync();
-            }
-
-            CheckCards(player);
-        }
-
-        // Skontroluj sucet hracovych kariet
-        private void CheckCards(Items.Player player)
-        {
-            var sum = player.CardSum;
+            // Ulozi zmeny do Db
+            await _context.SaveChangesAsync();
 
             // Hra sa prerusila ak ziskal hrac viac alebo prave 21 sucet kariet
-            if (sum >= 21)
+            if (player.CardSum >= 21)
             {
                 // Hrac ukoncil hru a caka na vyhodnotenie
                 player.ActionId = "Stand";
-
-                // Neaktivny
-                player.State = Items.Player.EState.None;
             }
         }
 
         // Ukoncenie kola
         private void RoundEnd(Items.Player player)
         {
-            // Vynuluj hracov profil a karty
+            // Vyhodnotenie kola podla stavu
+            switch (player.State)
+            {
+                case Items.Player.EState.Win:
+                    // Funkcia vyhry
+                    {
+                        _croupier.Wallet -= player.Bet;
+                        player.Wallet += player.Bet;
+                        break;
+                    }
+                case Items.Player.EState.Lose:
+                    // Funkcia prehry
+                    {
+                        _croupier.Wallet += player.Bet;
+                        player.Wallet -= player.Bet;
+                        break;
+                    }                
+            }
+
+            // Vynuluj hracov profil
             player.Bet = 0;
             player.ActionId = null;
-            FreeCards(player);
-        }
-
-        // Funkcia vyhry
-        private void Win(Items.Player player)
-        {
-            _croupier.Wallet -= player.Bet;
-            player.Wallet += player.Bet;
-            player.State = Items.Player.EState.Win;
-            RoundEnd(player);
-        }
-
-        // Funkcia prehry
-        private void Lose(Items.Player player)
-        {
-            _croupier.Wallet += player.Bet;
-            player.Wallet -= player.Bet;
-            player.State = Items.Player.EState.Lose;
-            RoundEnd(player);
-        }
-
-        // Funkcia remizy
-        private void Draw(Items.Player player)
-        {
-            player.State = Items.Player.EState.Draw;
-            RoundEnd(player);
         }
 
         // Krupierova hra
@@ -504,12 +470,15 @@ namespace Casino.Server.Controllers
                 if (Csum >= 17) break;
 
                 // Potiahni kartu
-                var deck = _context.Decks.First();
-                deck.GetCard(_croupier.Name, _context).Wait();
+                GivingCards(_croupier, 1).Wait();
+
+                _croupier.ActionId = "Hit";
 
                 // Uloz do Db
                 _context.SaveChanges();
             } while (true);
+
+            _croupier.ActionId = "Stand";
         }
 
         // Vytvvorenie prvkov a menu akcii hraca

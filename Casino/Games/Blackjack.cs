@@ -81,23 +81,24 @@ namespace Casino.Games
                 {
                     // Prebieha, kym hrac neskonci a neodide od stolu
                     while (true)
-                    {
-                        Print();
-
+                    {                        
                         if (Program.myPlayer.ActionId == "Stand")
                         {
-                            Console.Clear();
+                            //Console.Clear();
                             Program.ShowWarning("Waiting for round end.");
-                            Console.WriteLine("\n");
-                        }
-                        // Hrac ukoncil hru na serveri
-                        else if (Program.myPlayer.State != Items.Player.EState.Playing)
-                        {
-                            // Ukoncit hru
-                            break;
+                            Console.Write("\r");
                         }
                         else
                         {
+                            Print();
+
+                            // Hrac ukoncil hru na serveri
+                            if (Program.myPlayer.State != Items.Player.EState.Playing)
+                            {
+                                // Ukoncit hru
+                                break;
+                            }
+
                             // Zavolaj menu akcii hry
                             menu.InvokeResult().Wait();
 
@@ -189,7 +190,13 @@ namespace Casino.Games
                         {
                             Console.CursorLeft = /*(i * MAX_WIDTH) +*/((playersArray.Count() * MAX_WIDTH) >> 1) + ((MAX_WIDTH >> 1) - (croupier.Name.Length >> 1));
                             Console.WriteLine($"{croupier.Name}");
-                            Console.CursorLeft = /*(i * MAX_WIDTH) +*/((playersArray.Count() * MAX_WIDTH) >> 1) + ((MAX_WIDTH >> 1) - (croupier.Cards.Count() << 1));
+
+                            // Sucet kariet hraca
+                            var sumS = croupier.CardSum.ToString();
+                            Console.CursorLeft = /*(i * MAX_WIDTH)*/((playersArray.Count() * MAX_WIDTH) >> 1) + ((MAX_WIDTH >> 1) - (sumS.Length >> 1));
+                            Console.WriteLine(sumS);
+
+                            Console.CursorLeft = /*(i * MAX_WIDTH) +*/((playersArray.Count() * MAX_WIDTH) >> 1) + ((MAX_WIDTH >> 1) - (croupier.Cards.Count() << 1)) - 1;
                             foreach (var c in croupier.Cards)
                             {
                                 c.Print();
@@ -237,7 +244,7 @@ namespace Casino.Games
 
                                 // Sucet kariet hraca
                                 var sumS = playersArray[i].CardSum.ToString();
-                                Console.CursorLeft = (i * MAX_WIDTH) + ((MAX_WIDTH >> 1) - (sumS.Length >> 1)) - 1;
+                                Console.CursorLeft = (i * MAX_WIDTH) + ((MAX_WIDTH >> 1) - (sumS.Length >> 1));
                                 Console.WriteLine(sumS);
                                 height++;
 

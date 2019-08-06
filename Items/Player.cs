@@ -49,7 +49,7 @@ namespace Casino.Items
                                     var x = CardSumCounter + 11;
 
                                     if (x <= 21)
-                                        CardSumCounter += x;
+                                        CardSumCounter = x;
                                     else
                                         CardSumCounter += 1;
 
