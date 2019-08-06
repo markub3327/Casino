@@ -19,7 +19,7 @@ namespace Casino
         private static Menu.ListMenu mainMenu;
 
         // Informacie o serveri
-        private static Client.ServerInfo baseUri = new Client.ServerInfo("localhost", "5000", "casino", false);
+        private static Client.ServerInfo baseUri;// = new Client.ServerInfo("localhost", "5000", "casino", false);
 
         // Hlavna funkcia main hry
         public static void Main(string[] args)
@@ -70,6 +70,8 @@ namespace Casino
         // Pripoj sa na server
         private static void Connect()
         {
+            baseUri = new Client.ServerInfo();
+
             // Vytvor spojenie
             using (var client = new Client.Client())
             {
