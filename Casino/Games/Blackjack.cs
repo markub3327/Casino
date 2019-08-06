@@ -84,9 +84,8 @@ namespace Casino.Games
                     {                        
                         if (Program.myPlayer.ActionId == "Stand")
                         {
-                            //Console.Clear();
+                            Console.Clear();
                             Program.ShowWarning("Waiting for round end.");
-                            Console.Write("\r");
                         }
                         else
                         {
@@ -185,6 +184,8 @@ namespace Casino.Games
                     {
                         var croupier = players.Where(p => (p.Name == "Croupier-Blackjack")).ToArray()[0];
                         var playersArray = players.Where(p => (p.Name != "Croupier-Blackjack")).ToArray();
+
+                        Console.WriteLine();
 
                         if (croupier != null)
                         {

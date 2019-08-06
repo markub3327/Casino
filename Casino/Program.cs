@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using System.IO;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Casino
 {
@@ -19,14 +20,17 @@ namespace Casino
         private static Menu.ListMenu mainMenu;
 
         // Informacie o serveri
-        private static Client.ServerInfo baseUri;// = new Client.ServerInfo("localhost", "5000", "casino", false);
+        private static Client.ServerInfo baseUri;   // = new Client.ServerInfo("localhost", "5000", "casino", false);
 
         // Hlavna funkcia main hry
         public static void Main(string[] args)
         {
-            // Encoding
-            //Console.InputEncoding = System.Text.Encoding.Default;
-            //Console.OutputEncoding = System.Text.Encoding.Default;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Encoding
+                Console.InputEncoding = System.Text.Encoding.Unicode;
+                Console.OutputEncoding = System.Text.Encoding.Unicode;
+            }
 
             // Vytvori hlavne menu
             CreateMainMenu();
