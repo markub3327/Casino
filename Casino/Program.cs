@@ -22,6 +22,9 @@ namespace Casino
         // Informacie o serveri
         private static Client.ServerInfo baseUri;   // = new Client.ServerInfo("localhost", "5000", "casino", false);
 
+        // Referencia na hranu hru
+        private static Games.Game game;
+
         // Hlavna funkcia main hry
         public static void Main(string[] args)
         {
@@ -32,6 +35,9 @@ namespace Casino
                 Console.OutputEncoding = System.Text.Encoding.Unicode;
             }
 
+            // Udalost pri nahlom ukonceni app
+            Console.CancelKeyPress += Console_CancelKeyPress;
+            
             // Vytvori hlavne menu
             CreateMainMenu();
 
@@ -47,6 +53,15 @@ namespace Casino
             } while (true);
         }
 
+        private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
+            // Vymaze hraca od aktivnej hry
+            if (game != null)
+                game.Exit();
+
+            Exit(1);    // Vypnute nasilne code 1
+        }
+
         // Hlavne menu hry
         private static void CreateMainMenu()
         {
@@ -60,7 +75,7 @@ namespace Casino
                     new Menu.MenuItem { Key = ConsoleKey.F5, Text = "Create new server", IsEnabled = true, Action = NewServer },
                     new Menu.MenuItem { Text = "Show profile", IsEnabled = false, Action = Profile },
                     new Menu.MenuItem { Key = ConsoleKey.F1, Text = "About", IsEnabled = true, Action = About },
-                    new Menu.MenuItem { Key = ConsoleKey.Escape, Text = "Exit", IsEnabled = true, Action = () => Exit(0)  }
+                    new Menu.MenuItem { Key = ConsoleKey.Escape, Text = "Exit", IsEnabled = true, Action = () => Exit(0) } // Vypnute korektne cez menu code 0
                 }
             };
         }
@@ -168,7 +183,7 @@ namespace Casino
         {
             if (name == "Blackjack")
             {
-                var game = new Games.Blackjack(baseUri.Append("blackjack"));
+                game = new Games.Blackjack(baseUri.Append("blackjack"));
 
                 game.Play();
             }

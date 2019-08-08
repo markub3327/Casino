@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Casino.Games
 {
-    public class Blackjack
+    public class Blackjack : Game
     {
         // Blackjack herne menu
         private static Menu.ListMenu menu;
@@ -14,7 +14,7 @@ namespace Casino.Games
 
         private readonly int MAX_WIDTH = 25;
 
-        public Blackjack(Client.ServerInfo info)
+        public Blackjack(Client.ServerInfo info) : base("Blackjack")
         {
             this.info = info;
 
@@ -53,35 +53,36 @@ namespace Casino.Games
         }
 
         // Jadro hry
-        public void Play()
+        public override void Play()
         {
-            while (true)
+            // Jadro hry
+            using (var client = new Client.Client())
             {
-                // Hrac zada vysku stavky, s ktorou ide do hry
-                Program.myPlayer.Bet = SetBet();
-
-                // Ak hrac vsadi 0 konci hru, alebo ked nema dost penazi na stavky
-                if (Program.myPlayer.Wallet < Program.myPlayer.Bet)
+                // Hlavna slucka hry
+                while (true)
                 {
-                    Program.ShowError("You don't have enaught money for play");
-                    Console.WriteLine("\n");
-                    break;
-                }
-                if (Program.myPlayer.Bet <= 0)
-                {
-                    break;
-                }
+                    // Hrac zada vysku stavky, s ktorou ide do hry
+                    Program.myPlayer.Bet = SetBet();
 
-                // Aktualizuj profil hraca na servery
-                UpdatePlayer();
-                GetPlayer();
+                    // Ak hrac vsadi 0 konci hru, alebo ked nema dost penazi na stavky
+                    if (Program.myPlayer.Wallet < Program.myPlayer.Bet)
+                    {
+                        Program.ShowError("You don't have enaught money for play");
+                        Console.WriteLine("\n");
+                        break;
+                    }
+                    if (Program.myPlayer.Bet <= 0)
+                    {
+                        break;
+                    }
 
-                // Jadro hry
-                using (var client = new Client.Client())
-                {
+                    // Aktualizuj profil hraca na servery
+                    UpdatePlayer();
+                    GetPlayer();
+
                     // Prebieha, kym hrac neskonci a neodide od stolu
                     while (true)
-                    {                        
+                    {
                         if (Program.myPlayer.ActionId == "Stand")
                         {
                             Console.Clear();
@@ -111,16 +112,20 @@ namespace Casino.Games
             }
 
             // Na konci hry vymaz hraca od stola
-            RemovePlayer();
+            Exit();
         }
 
         // Vymaz hraca
-        private void RemovePlayer()
+        public override void Exit()
         {
             using (var client = new Client.Client())
             {
+                // Vymaz hraca od stolu
                 client.RemovePlayerAsync(info.Append($"players?token={Uri.EscapeDataString(Program.myPlayer.Token)}")).Wait();
             }
+
+            // Nacitaj jeho novy profil
+            GetPlayer();
         }
 
         // Nacitaj vysku stavky z klavesnice
@@ -151,6 +156,7 @@ namespace Casino.Games
             }
         }
 
+        // Nacitaj hracov profil zo serveru
         private void GetPlayer()
         {
             Items.Player newPlayer;
@@ -197,7 +203,7 @@ namespace Casino.Games
                             Console.CursorLeft = /*(i * MAX_WIDTH)*/((playersArray.Count() * MAX_WIDTH) >> 1) + ((MAX_WIDTH >> 1) - (sumS.Length >> 1));
                             Console.WriteLine(sumS);
 
-                            Console.CursorLeft = /*(i * MAX_WIDTH) +*/((playersArray.Count() * MAX_WIDTH) >> 1) + ((MAX_WIDTH >> 1) - (croupier.Cards.Count() << 1)) - 1;
+                            Console.CursorLeft = /*(i * MAX_WIDTH) +*/((playersArray.Count() * MAX_WIDTH) >> 1) + ((MAX_WIDTH >> 1) - (croupier.Cards.Count() << 1));
                             foreach (var c in croupier.Cards)
                             {
                                 c.Print();
@@ -296,6 +302,7 @@ namespace Casino.Games
             }
         }
 
+        // Titulna informacia hry
         private void Head()
         {
             Console.WriteLine("===============================================");
@@ -304,6 +311,6 @@ namespace Casino.Games
             Console.WriteLine("                    Blackjack                  ");
             Console.ResetColor();
             Console.WriteLine("===============================================\n");
-        }
+        }        
     }
 }
