@@ -1,0 +1,38 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{AFD5A90B-0D09-493A-B71D-B6F0FEC926E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Casino", "Casino\Casino.csproj", "{042CE9D9-9BE6-474E-A564-834D45DDD704}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Items", "Items\Items.csproj", "{BBDFB7A5-8855-4A0D-B676-315E83AB9B38}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AFD5A90B-0D09-493A-B71D-B6F0FEC926E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFD5A90B-0D09-493A-B71D-B6F0FEC926E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFD5A90B-0D09-493A-B71D-B6F0FEC926E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFD5A90B-0D09-493A-B71D-B6F0FEC926E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{042CE9D9-9BE6-474E-A564-834D45DDD704}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{042CE9D9-9BE6-474E-A564-834D45DDD704}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{042CE9D9-9BE6-474E-A564-834D45DDD704}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{042CE9D9-9BE6-474E-A564-834D45DDD704}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BBDFB7A5-8855-4A0D-B676-315E83AB9B38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBDFB7A5-8855-4A0D-B676-315E83AB9B38}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBDFB7A5-8855-4A0D-B676-315E83AB9B38}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBDFB7A5-8855-4A0D-B676-315E83AB9B38}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		Policies = $0
+		$0.DotNetNamingPolicy = $1
+		$1.DirectoryNamespaceAssociation = PrefixedHierarchical
+		$0.StandardHeader = $2
+		$2.Text = @\n${FileName}\n \nAuthor:\n      ${AuthorName} <${AuthorEmail}>\n\nCopyright (c) ${Year} ${CopyrightHolder}\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the "Software"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.
+		$0.VersionControlPolicy = $3
+		version = 2.0
+	EndGlobalSection
+EndGlobal
