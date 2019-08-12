@@ -3,31 +3,18 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
-    <ReleaseVersion>1.3</ReleaseVersion>
-    <RootNamespace>Casino</RootNamespace>
-    <AssemblyName>Casino</AssemblyName>
-    <StartupObject>Casino.Program</StartupObject>
+    <ReleaseVersion>2.0</ReleaseVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugType>full</DebugType>
-    <Optimize>true</Optimize>
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <Optimize>true</Optimize>
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Items\Items.csproj" />
+    <ProjectReference Include="..\Server\Server.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ConsoleTables" Version="2.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Server\Server.csproj" />
-    <ProjectReference Include="..\Items\Items.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Client\" />
     <Folder Include="Games\" />
-    <Folder Include="Menu\" />
   </ItemGroup>
 </Project>

@@ -1,29 +1,26 @@
-using System;
+﻿using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 using System.IO;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using ConsoleTables;
 
 namespace Casino
 {
     public class Program
     {
-        // Referencia na lokalneho hraca, s ktorym hram hru
-        public static Items.Player myPlayer;
-        
-        // Hlavne menu
+        // Referencia na vlastneho hraca
+        private static Items.Player myPlayer;
+
+        // Http cesta k api
+        private static Uri serverUri;
+
+        // Hlavne menu hry
         private static Menu.ListMenu mainMenu;
-
-        // Informacie o serveri
-        private static Client.ServerInfo baseUri;   // = new Client.ServerInfo("localhost", "5000", "casino", false);
-
-        // Referencia na hranu hru
-        private static Games.Game game;
 
         // Hlavna funkcia main hry
         public static void Main(string[] args)
@@ -37,14 +34,15 @@ namespace Casino
 
             // Udalost pri nahlom ukonceni app
             Console.CancelKeyPress += Console_CancelKeyPress;
-            
+
             // Vytvori hlavne menu
             CreateMainMenu();
 
             // Vycisti obrazovku na zaciatku hry
             Console.Clear();
 
-            do {
+            do
+            {
                 // Hlavicka menu
                 Head();
 
@@ -56,8 +54,8 @@ namespace Casino
         private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             // Vymaze hraca od aktivnej hry
-            if (game != null)
-                game.Exit();
+            //if (game != null)
+            //    game.Exit();
 
             Exit(1);    // Vypnute nasilne code 1
         }
@@ -71,9 +69,10 @@ namespace Casino
                 {
                     new Menu.MenuItem { Key = ConsoleKey.F2, Text = "Connect to server", IsEnabled = true, Action = Connect },
                     new Menu.MenuItem { Key = ConsoleKey.F3, Text = "New game", IsEnabled = false, Action = NewGame },
-                    new Menu.MenuItem { Key = ConsoleKey.F4, Text = "New player", IsEnabled = false, Action = NewPlayer },
+                    new Menu.MenuItem { Text = "New player", IsEnabled = false, Action = NewPlayer },
                     new Menu.MenuItem { Key = ConsoleKey.F5, Text = "Create new server", IsEnabled = true, Action = NewServer },
-                    new Menu.MenuItem { Text = "Show profile", IsEnabled = false, Action = Profile },
+                    new Menu.MenuItem { Text = "Players list", IsEnabled = false, Action = PlayersList },
+                    new Menu.MenuItem { Text = "Profile", IsEnabled = false, Action = Profile },
                     new Menu.MenuItem { Key = ConsoleKey.F1, Text = "About", IsEnabled = true, Action = About },
                     new Menu.MenuItem { Key = ConsoleKey.Escape, Text = "Exit", IsEnabled = true, Action = () => Exit(0) } // Vypnute korektne cez menu code 0
                 }
@@ -83,29 +82,18 @@ namespace Casino
         // Novy server
         private static void NewServer()
         {
-            Server.Program.Run(null);
+            Server.Program.Main(null);
         }
 
         // Pripoj sa na server
         private static void Connect()
         {
-            baseUri = new Client.ServerInfo();
+            serverUri = new Uri("http://localhost:5000/casino/"); //= new Client.ServerInfo();
 
-            // Vytvor spojenie
-            using (var client = new Client.Client())
-            {
-                // Ak sa pripojil povol vytvorenie hraca
-                if (client.TryConnection(baseUri))
-                {
-                    mainMenu.Items[2].IsEnabled = true; // novy hrac
-                    mainMenu.Items[3].IsEnabled = false; // novy server
-                }
-                else
-                {
-                    mainMenu.Items[2].IsEnabled = false;
-                    mainMenu.Items[3].IsEnabled = true;
-                }
-            }
+
+            mainMenu.Items[2].IsEnabled = true;  // novy hrac
+            mainMenu.Items[3].IsEnabled = false;  // novy server
+            mainMenu.Items[4].IsEnabled = true;  // zoznam hracov na serveri
         }
 
         // Registracia noveho hraca
@@ -117,75 +105,63 @@ namespace Casino
             do
             {
                 // Zadajte meno svojho hraca
-                Console.Write("Enter player's name: ");
+                Console.Write("Enter your player's nickname: ");
                 name = Console.ReadLine();
             } while (name == string.Empty);
 
             Console.WriteLine();
 
             // Vytvor spojenie
-            using (var client = new Client.Client())
+            using (var client = new Client())
             {
                 // Vytvor objekt hraca
-                myPlayer = client.AddPlayerAsync(baseUri.Append("players"), new Items.Player
-                {
-                    Name = name,
-                    Wallet = 10000,  // Novy hrac dostava 10000$
-                    State = Items.Player.EState.None
-                }).Result;
+                myPlayer = (Items.Player) client.AddItemAsync(new Uri(serverUri, "players/create"), new Items.Player { Nickname = name }).Result;
 
                 // Ak sa podarilo pridat hraca do kasina povol zobrazenie jeho profilu a novu hru
                 if (myPlayer != null)
-                {
-                    mainMenu.Items[1].IsEnabled = true;     // nova hra
-                    mainMenu.Items[2].IsEnabled = false;    // novy hrac
-                    mainMenu.Items[4].IsEnabled = true;     // profil hraca
+                {                    
+                    mainMenu.Items[1].IsEnabled =  true;     // nova hra
+                    mainMenu.Items[2].IsEnabled = false;     // novy hrac
+                    mainMenu.Items[5].IsEnabled =  true;     // profil hraca
 
                     ShowWarning("Adding player was successful.");
                     Console.WriteLine("\n");
                 }
                 else
                 {
-                    ShowError($"Player with name '{name}' cannot be created.");
+                    ShowError($"Player '{name}' cannot be created.");
                     Console.WriteLine();
                     ShowWarning("Maybe player already exist on server.");
                     Console.WriteLine("\n");
                 }
-            }            
+            }
         }
 
         // Zacni hrat novu hru
         private static void NewGame()
         {
             // Vytvor spojenie
-            using (var client = new Client.Client())
+            using (var client = new Client())
             {
-                var games = client.GetGamesAsync(baseUri.Append("games")).Result;
-                if (games != null)
-                {
-                    var gameMenu = new Menu.ListMenu("Game menu")
+                    // Menu hier
+                    var gameMenu = new Menu.ListMenu("Games")
                     {
                         Items = new List<Menu.MenuItem>()
                     };
 
-                    foreach (var g in games)
+                    gameMenu.AddItem(new Menu.MenuItem { Text = Games.Blackjack.Name, IsEnabled = true, Action = () =>
+                    // Spusti hru blackjack
                     {
-                        gameMenu.AddItem(new Menu.MenuItem { Text = g.Name, IsEnabled = true, Action = () => SelectGame(g.Name) });
-                    }
+                        Games.Blackjack game = new Games.Blackjack();
 
-                    gameMenu.InvokeResult().Wait();
-                }
-            }
-        }
+                        game.Run().Wait();
+                    }});
+                    
 
-        // Akcia podla nazvu hry
-        private static void SelectGame(string name)
-        {
-            if (name == "Blackjack")
-            {
-                game = new Games.Blackjack(baseUri.Append("blackjack"));
+                    // Vrati sa na hlavne menu
+                    gameMenu.AddItem(new Menu.MenuItem { Text = "Back", IsEnabled = true, Action = () => { return; } });
 
-                game.Play();
+                    gameMenu.InvokeResult().Wait();                
             }
         }
 
@@ -193,14 +169,33 @@ namespace Casino
         public static void Profile()
         {
             // Vytvor spojenie
-            using (var client = new Client.Client())
+            using (var client = new Client())
             {
-                var newPlayer = client.GetPlayerAsync(baseUri.Append($"players?token={Uri.EscapeDataString(myPlayer.Token)}")).Result;
-                if (newPlayer != null)
+                myPlayer = client.GetPlayerAsync(new Uri(serverUri, "players/player"), myPlayer).Result;
+                var table = new ConsoleTable("Nickname", "Game", "Wallet [$]", "State");
+                if (myPlayer != null)
                 {
-                    myPlayer = newPlayer;
-                    myPlayer.Print();
+                    table.AddRow(myPlayer.Nickname, myPlayer.GameId, myPlayer.Wallet, myPlayer.State);
+                    table.Configure(o => { o.NumberAlignment = Alignment.Right; o.EnableCount = false; });
+                    table.Write();
                 }
+            }
+        }
+
+        // Zoznam hracov
+        public static void PlayersList()
+        {
+            using (var client = new Client())
+            {
+                var players = (List<Items.Player>) client.GetListAsync(new Uri(serverUri, "players/all"), typeof(List<Items.Player>)).Result;
+                var table = new ConsoleTable("Nickname", "Game");
+
+                foreach (var p in players)
+                {
+                    table.AddRow(p.Nickname, p.GameId);
+                }
+                table.Configure(o => o.EnableCount = false);
+                table.Write();                
             }
         }
 
@@ -251,6 +246,6 @@ namespace Casino
             Console.BackgroundColor = ConsoleColor.Black;
             Console.Write(text);
             Console.ResetColor();
-        }
+        }        
     }
-}
+}   

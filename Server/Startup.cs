@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
 
 namespace Casino.Server
 {
@@ -26,12 +26,11 @@ namespace Casino.Server
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // Databaza v RAM pameti
+            // Db connect (In-memory)
             services.AddDbContext<Models.ApiContext>(opt =>
                             opt.UseInMemoryDatabase("CasinoDb"));
 
-            services.AddControllers()
-                .AddNewtonsoftJson();   // JSON.NET use in older version of ASP.NETCore                
+            services.AddControllers();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -47,21 +46,17 @@ namespace Casino.Server
                 app.UseHsts();
             }
 
+            // !!! V praxi povolit pre bezpecnost spojenia
             //app.UseHttpsRedirection();
 
-            // Add the endpoint routing matcher middleware to the request pipeline
             app.UseRouting();
 
-            // Add the authorization middleware to the request pipeline
             app.UseAuthorization();
 
-            // Add endpoints to the request pipeline
             app.UseEndpoints(endpoints =>
             {
-                // Default root URL  (http://localhost:5000)
-                endpoints.MapControllerRoute("default", "/casino", new { controller = "Casino", action = "Index" });
-                endpoints.MapControllerRoute("default_styles", "/casino/styles.css", new { controller = "Casino", action = "Styles" });
+                endpoints.MapControllers();
             });
-        }        
+        }
     }
 }
