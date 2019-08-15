@@ -14,10 +14,10 @@ namespace Casino
     public class Program
     {
         // Referencia na vlastneho hraca
-        private static Items.Player myPlayer;
+        public static Items.Player myPlayer { get; private set; }
 
         // Http cesta k api
-        private static Uri serverUri;
+        public static Uri serverUri { get; private set; }
 
         // Hlavne menu hry
         private static Menu.ListMenu mainMenu;
@@ -154,7 +154,7 @@ namespace Casino
                     {
                         Games.Blackjack game = new Games.Blackjack();
 
-                        game.Run().Wait();
+                        game.Run();                         
                     }});
                     
 
@@ -177,7 +177,7 @@ namespace Casino
                 {
                     table.AddRow(myPlayer.Nickname, myPlayer.GameId, myPlayer.Wallet, myPlayer.State);
                     table.Configure(o => { o.NumberAlignment = Alignment.Right; o.EnableCount = false; });
-                    table.Write();
+                    table.Write(Format.Alternative);
                 }
             }
         }
@@ -195,7 +195,7 @@ namespace Casino
                     table.AddRow(p.Nickname, p.GameId);
                 }
                 table.Configure(o => o.EnableCount = false);
-                table.Write();                
+                table.Write(Format.Alternative);                
             }
         }
 

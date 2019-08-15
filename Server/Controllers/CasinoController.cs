@@ -14,6 +14,7 @@ namespace Casino.Server.Controllers
     [ApiController]
     public class CasinoController : ControllerBase
     {
+        // Referencia na Db
         private readonly Models.ApiContext context;
 
         public CasinoController(ILogger<CasinoController> logger, Models.ApiContext context)
@@ -42,12 +43,14 @@ namespace Casino.Server.Controllers
         {
             if (player != null)
             {
-                var playerDb = await context.Players.FindAsync(player.Nickname);
+                var playerDb = await context.Players.Where(p => p.Nickname == player.Nickname)
+                    .Include(p => p.Cards)
+                    .ToArrayAsync();
 
                 // Autorizacia hraca pomocou generovaneho tokenu
-                if (playerDb != null && playerDb.Token == player.Token)
+                if (playerDb[0] != null && playerDb[0].Token == player.Token)
                 {
-                    return Ok(playerDb);
+                    return Ok(playerDb[0]);
                 }
 
                 return NotFound();
@@ -76,6 +79,41 @@ namespace Casino.Server.Controllers
                 // Vytvoreny uspesne, vrati profil
                 return CreatedAtAction(nameof(GetPlayer), player);
             }
+
+            // Zla poziadavka
+            return BadRequest();
+        }
+
+        // PUT http://localhost:5000/casino/players/update
+        [HttpPut("[controller]/players/update")]
+        public async Task<IActionResult> UpdatePlayer([FromBody]Items.Player player)
+        {
+            if (player != null)
+            {
+                var playerDb = await context.Players.Where(p => p.Nickname == player.Nickname)
+                    .Include(p => p.Cards)
+                    .ToArrayAsync();
+
+                // Autorizacia hraca pomocou generovaneho tokenu
+                if (playerDb[0] != null && playerDb[0].Token == player.Token)
+                {
+                    // Aktualizuje nasledovne polozky
+                    playerDb[0].Action = player.Action;
+                    playerDb[0].Bet = player.Bet;
+                    playerDb[0].GameId = player.GameId;
+                    playerDb[0].State = player.State;
+                    playerDb[0].Wallet = player.Wallet;
+
+                    // Prida zaznam do Db
+                    await context.SaveChangesAsync();
+
+                    // Bez obsahu v odpovedi
+                    return NoContent();
+                }
+
+                return NotFound();
+            }
+
 
             // Zla poziadavka
             return BadRequest();

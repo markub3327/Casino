@@ -40,6 +40,73 @@ namespace Casino
             }
         }
 
+        public async Task<bool> UpdateItemAsync(Uri uri, object item)
+        {
+            try
+            {
+                // Nacitaj objekt do JSON spravy
+                // JSON size doesn't matter because only a small piece is read at a time from the HTTP request
+                var json = System.Text.Json.JsonSerializer.Serialize(item);
+
+                // Obsah spravy
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                // Posli HTTP POST na server a zachyt odpoved
+                using (var response = await this.PutAsync(uri, content))
+                {
+                    // Zapis prebehol uspesne
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception e) //HttpRequestException
+            {
+                Program.ShowError("\nError with connection!!!\n\tMessage:");
+                Console.WriteLine(" {0}", e.Message);
+                return false;
+            }
+        }
+
+        public async Task<bool> DeleteItemAsync(Uri uri, object item)
+        {
+            try
+            {
+                // Nacitaj objekt do JSON spravy
+                // JSON size doesn't matter because only a small piece is read at a time from the HTTP request
+                var json = System.Text.Json.JsonSerializer.Serialize(item);
+
+                // Telo spravy odosielany na server k overeniu pristupu ku hracovi
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = uri,
+                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                };
+
+                // Posli HTTP GET na server a zachyt odpoved
+                using (var response = await this.SendAsync(request))
+                {
+                    // Zapis prebehol uspesne
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception e) //HttpRequestException
+            {
+                Program.ShowError("\nError with connection!!!\n\tMessage:");
+                Console.WriteLine(" {0}", e.Message);
+                return false;
+            }
+        }
+
         public async Task<Items.Player> GetPlayerAsync(Uri uri, Items.Player player)
         {
             try
@@ -96,6 +163,29 @@ namespace Casino
                                 return serializer.Deserialize(reader, type);
                             }
                         }
+                    }
+
+                    return null;
+                }
+            }
+            catch (Exception e) //HttpRequestException
+            {
+                Program.ShowError("\nError with connection!!!\n\tMessage:");
+                Console.WriteLine(" {0}", e.Message);
+                return null;
+            }
+        }
+
+        public async Task<object> GetItemAsync(Uri uri, Type type)
+        {
+            try
+            {
+                // Posli HTTP GET na server                
+                using (var response = await this.GetAsync(uri))
+                {
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return Newtonsoft.Json.JsonConvert.DeserializeObject(await response.Content.ReadAsStringAsync(), type);
                     }
 
                     return null;
