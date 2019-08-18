@@ -62,8 +62,9 @@ namespace Casino.Games
                         break;
                     }
 
-                    // Nastav hraca na aktivneho
+                    // Nastav hraca
                     Program.myPlayer.State = Items.Player.EState.PLAYING;
+                    Program.myPlayer.Action = Items.Player.EActions.NONE;
 
                     // Novy hrac taha 2 karty
                     client.UpdateItemAsync(new Uri(Program.serverUri, "blackjack/get-card"), Program.myPlayer).Wait();
@@ -84,11 +85,14 @@ namespace Casino.Games
                             // Vypis herneho stola
                             Print(players, croupier);
 
-                            // Moj hrac
-                            var my = players.Where(p => p.Nickname == Program.myPlayer.Nickname).ToArray()[0];
+                            // Ak nie je hrac aktivny ukonci kolo
+                            if (Program.myPlayer.State != Items.Player.EState.PLAYING)
+                                break;
 
-                            // Moj sucet kariet
-                            var mySum = my.CardSum;
+                            // Moj hrac
+                            var my = players.Where(p => p.Nickname == Program.myPlayer.Nickname)
+                                            .Select(p => new { p.CardSum, CardCount = p.Cards.Count() }).ToArray();
+                            var mySum = my[0].CardSum;
 
                             // Ak hrac este neukoncil hru a vybera si akcie
                             if (Program.myPlayer.Action != Items.Player.EActions.STAND)
@@ -132,7 +136,7 @@ namespace Casino.Games
                                         case Items.Player.EActions.EXIT:
                                             {
                                                 // Ak mam iba prve 2 karty mozem hru vzdat
-                                                if (my.Cards.Count() == 2)
+                                                if (my[0].CardCount == 2)
                                                 {
                                                     // Hrac ukoncil hru
                                                     Program.myPlayer.State = Items.Player.EState.FREE;
@@ -151,7 +155,7 @@ namespace Casino.Games
                                 if (croupier.Action == Items.Player.EActions.STAND)
                                 {
                                     // Krupierov sucet kariet
-                                    var cSum = my.CardSum;
+                                    var cSum = croupier.CardSum;
 
                                     // Sucet vyrovnany
                                     if (mySum == cSum)
@@ -160,7 +164,7 @@ namespace Casino.Games
                                         Program.myPlayer.State = Items.Player.EState.DRAW;
                                     }
                                     // Hrac ziskal Blackjack (eso + 10karta)
-                                    else if ((my.Cards.Count() == 2) && (mySum == 21))
+                                    else if ((my[0].CardCount == 2) && (mySum == 21))
                                     {
                                         // Nastav vyhru hraca
                                         Program.myPlayer.State = Items.Player.EState.WIN;
@@ -193,7 +197,7 @@ namespace Casino.Games
                             client.UpdateItemAsync(new Uri(Program.serverUri, "players/update"), Program.myPlayer).Wait();
                         }
                       // Ak hrac uz dohral ukonci cyklus
-                    } while (Program.myPlayer.State == Items.Player.EState.PLAYING);
+                    } while (true);
 
                     // Uvolnit hracove karty na serveri
                     client.DeleteItemAsync(new Uri(Program.serverUri, "blackjack/free-card"), Program.myPlayer).Wait();
@@ -201,6 +205,12 @@ namespace Casino.Games
                     Program.ShowWarning("Round ended");
                     Console.WriteLine("\n");
                 }
+
+                // Vnunuluj rhu
+                //Program.myPlayer.GameId = null;
+
+                // Aktualizuj hraca
+                //client.UpdateItemAsync(new Uri(Program.serverUri, "players/update"), Program.myPlayer).Wait();
             }
         }
 
