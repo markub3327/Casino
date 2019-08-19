@@ -64,56 +64,27 @@ namespace Casino.Server.Controllers
             }
         }
 
-        // GET http://localhost:5000/casino/players/all
-        [HttpGet("casino/[controller]/croupier")]
-        public async Task<IActionResult> GetCroupier()
+        // GET http://localhost:5000/casino/players/
+        [HttpGet("casino/[controller]/players")]
+        public async Task<IActionResult> GetPlayers()
         {
-            var players = context.Players.Where(p => p.GameId == "Blackjack");
-            var croupierDb = await players.Where(p => p.Nickname == "Croupier-Blackjack")
+            // Vytvor pole hracov na serveri
+            var players = await context.Players.Where(p => p.GameId == "Blackjack")
                 .Include(p => p.Cards)
-                .ToArrayAsync();
+                .ToListAsync();
 
-            var standPlayers = players.Where(p => p.Action == Items.Player.EActions.STAND);
-            // Ak uz vsetci hraci ukoncili hru
-            if (standPlayers.Count() == (players.Count() - 1))
+            var croupierDb = players.Where(p => p.Nickname == "Croupier-Blackjack")
+                .ToArray();
+
+            // Ak uz vsetci hraci ukoncili hru na rade je krupier
+            if ((croupierDb[0].State != Items.Player.EState.PLAYING) &&
+                !players.Any(p => p.State != Items.Player.EState.PLAYING && p.Nickname != "Croupier-Blackjack"))
             {
-                // Hra krupiera (asynchronna uloha)
-                //await Task.Run(async () =>
-                //{
-                // Krupier si taha karty do suctu 17 a viac
-                do
-                {
-                    //_croupier.Print();
-
-                    // Tahaj karty dokym nemas aspon 17 
-                    var Csum = croupierDb[0].CardSum;
-                    if (Csum >= 17)
-                    {
-                        // Krupier ukoncil hru idu sa vyplacat vyhry
-                        croupierDb[0].Action = Items.Player.EActions.STAND;
-
-                        // Prida zaznam do Db
-                        await context.SaveChangesAsync();
-
-                        break;
-                    }
-
-                    // Prirad nahodnu kartu
-                    await RandomCard(croupierDb[0]);
-
-                    // Krupier ukoncil hru idu sa vyplacat vyhry
-                    croupierDb[0].Action = Items.Player.EActions.HIT;
-
-                    // Uloz do Db
-                    await context.SaveChangesAsync();
-                } while (true);
-                //});
-            }
-            else if (croupierDb[0].Cards.Count() != 1)
-            {
+                // Vynuluj krupierov profil
                 croupierDb[0].Action = Items.Player.EActions.NONE;
-                //croupierDb[0].State = Items.Player.EState.PLAYING;
+                croupierDb[0].State = Items.Player.EState.PLAYING;
 
+                // Uvolni krupierove karty
                 foreach (var card in croupierDb[0].Cards)
                     card.PlayerId = null;
 
@@ -123,34 +94,56 @@ namespace Casino.Server.Controllers
                 // Uloz do Db
                 await context.SaveChangesAsync();
             }
-
-            // Vytvor vystup JSON zo zoznamu hracov pri stole
-            return Ok(croupierDb.Select(p => new {
-                p.Nickname,
-                Cards = p.Cards.Select(c => new Items.Card { Suit = c.Suit, Value = c.Value }),
-                p.State,
-                p.Action
-            }).ToArray()[0]);
-        }
-
-        // GET http://localhost:5000/casino/players/
-        [HttpGet("casino/[controller]/players")]
-        public async Task<IActionResult> GetPlayers()
-        {
-            // Vytvor pole hracov na serveri
-            var players = await context.Players.Where(p => p.GameId == "Blackjack" && p.Nickname != "Croupier-Blackjack")
-                .Include(p => p.Cards)
-                .Select(p => new
+            // Ak este hraci hraju postaraj sa o krupierove karty
+            else
+            {
+                var standPlayers = players.Where(p => p.Action == Items.Player.EActions.STAND);
+                if (standPlayers.Count() == (players.Count() - 1))
                 {
-                    p.Nickname,
-                    p.Bet,
-                    Cards = p.Cards.Select(c => new { c.Suit, c.Value }),
-                    p.State,
-                    p.Action
-                }).ToListAsync();
+                    // Hra krupiera (asynchronna uloha)
+                    await Task.Run(async () =>
+                    {
+                        // Krupier si taha karty do suctu 17 a viac
+                        do
+                        {
+                            // Tahaj karty dokym nemas aspon 17 
+                            var Csum = croupierDb[0].CardSum;
+                            if (Csum >= 17)
+                            {
+                                // Krupier ukoncil hru idu sa vyplacat vyhry
+                                croupierDb[0].Action = Items.Player.EActions.STAND;
+                                croupierDb[0].State = Items.Player.EState.FREE;
+
+                                // Prida zaznam do Db
+                                await context.SaveChangesAsync();
+
+                                // Koniec
+                                break;
+                            }
+
+                            // Prirad nahodnu kartu
+                            await RandomCard(croupierDb[0]);
+
+                            // Krupier ukoncil hru idu sa vyplacat vyhry
+                            croupierDb[0].Action = Items.Player.EActions.HIT;
+
+                            // Uloz do Db
+                            await context.SaveChangesAsync();
+                        } while (true);
+                    });
+                }
+            }
 
             // Vytvor vystup JSON zo zoznamu hracov pri stole
-            return Ok(players);
+            return Ok(players.Select(p => new
+            {
+                p.Nickname,
+                p.Bet,
+                Cards = p.Cards.Select(c => new { c.Suit, c.Value }),
+                p.State,
+                p.Action,
+                p.Wallet
+            }));
         }
 
         // PUT http://localhost:5000/casino/players/
@@ -215,6 +208,7 @@ namespace Casino.Server.Controllers
             return BadRequest();
         }
 
+        // Vyber nahodnu kartu
         private async Task RandomCard(Items.Player player)
         {
             // Nahodny vyber volnej karty z balicku

@@ -22,6 +22,9 @@ namespace Casino
         // Hlavne menu hry
         private static Menu.ListMenu mainMenu;
 
+        // Referencia na hranu hru
+        private static Games.Blackjack game;
+
         // Hlavna funkcia main hry
         public static void Main(string[] args)
         {
@@ -54,8 +57,8 @@ namespace Casino
         private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             // Vymaze hraca od aktivnej hry
-            //if (game != null)
-            //    game.Exit();
+            if (game != null)
+                game.Exit();
 
             Exit(1);    // Vypnute nasilne code 1
         }
@@ -152,7 +155,7 @@ namespace Casino
                     gameMenu.AddItem(new Menu.MenuItem { Text = Games.Blackjack.Name, IsEnabled = true, Action = () =>
                     // Spusti hru blackjack
                     {
-                        Games.Blackjack game = new Games.Blackjack();
+                        game = new Games.Blackjack();
 
                         game.Run();                         
                     }});

@@ -54,6 +54,10 @@ namespace Casino.Games
                     // Hrac zada vysku stavky, s ktorou ide hrat
                     Program.myPlayer.Bet = SetBet();
 
+                    // Ak si praje hrac skoncit
+                    if (Program.myPlayer.Bet <= 0)
+                        break;
+
                     // Ak hrac vsadi 0 konci hru, alebo ked nema dost penazi na stavky
                     if (Program.myPlayer.Wallet < Program.myPlayer.Bet)
                     {
@@ -77,8 +81,9 @@ namespace Casino.Games
                     do
                     {
                         // Nacitaj hracov
-                        var croupier = (Items.Player)client.GetItemAsync(new Uri(Program.serverUri, "blackjack/croupier"), typeof(Items.Player)).Result;
-                        var players = (List<Items.Player>)client.GetListAsync(new Uri(Program.serverUri, "blackjack/players"), typeof(List<Items.Player>)).Result;
+                        var playersDb = (List<Items.Player>)client.GetListAsync(new Uri(Program.serverUri, "blackjack/players"), typeof(List<Items.Player>)).Result;
+                        var croupier = playersDb.Where(p => p.Nickname == "Croupier-Blackjack").ToArray()[0];
+                        var players = playersDb.Where(p => p.Nickname != "Croupier-Blackjack").ToList();
 
                         if (players != null && players.Count > 0 && croupier != null)
                         {
@@ -195,6 +200,8 @@ namespace Casino.Games
 
                             // Aktualizuj hraca
                             client.UpdateItemAsync(new Uri(Program.serverUri, "players/update"), Program.myPlayer).Wait();
+
+                            Task.Delay(16).Wait();     // Refresh 60Hz => 16ms
                         }
                       // Ak hrac uz dohral ukonci cyklus
                     } while (true);
@@ -206,11 +213,8 @@ namespace Casino.Games
                     Console.WriteLine("\n");
                 }
 
-                // Vnunuluj rhu
-                //Program.myPlayer.GameId = null;
-
-                // Aktualizuj hraca
-                //client.UpdateItemAsync(new Uri(Program.serverUri, "players/update"), Program.myPlayer).Wait();
+                // Vymaz hraca od stolu
+                Remove(client);
             }
         }
 
@@ -220,11 +224,8 @@ namespace Casino.Games
             using (var client = new Client())
             {
                 // Vymaz hraca od stolu
-                //client.RemovePlayerAsync(info.Append($"players?token={Uri.EscapeDataString(Program.myPlayer.Token)}")).Wait();
+                Remove(client);
             }
-
-            // Nacitaj jeho novy profil
-            //GetPlayer();
         }
 
         // Titulna informacia hry
@@ -246,13 +247,19 @@ namespace Casino.Games
 
             while (true)
             {
+                Console.WriteLine("Enter q - quit the game");
                 Console.Write("Enter bet [$]: ");
                 betS = Console.ReadLine();
 
+                // Zadajte q pre koniec hry
+                if (betS.Contains('q') || betS.Contains('Q'))
+                    return -1L;
+
+                // Zadajte spravnu vysku stavky
                 if (long.TryParse(betS, out bet))
                 {
                     // Minimalna stanovena stavka v kasine je 100$
-                    if (bet < 100)
+                    if (bet < 100L)
                     {
                         Program.ShowError("Minimal bet is 100$");
                         Console.WriteLine();
@@ -267,6 +274,19 @@ namespace Casino.Games
             Console.WriteLine();
 
             return bet;
+        }
+
+        // Vycisti hracov profil po ukonceni hry
+        private void Remove(Client client)
+        {
+            // Vynuluj hru
+            Program.myPlayer.Action = Items.Player.EActions.NONE;
+            Program.myPlayer.Bet = 0L;
+            Program.myPlayer.State = Items.Player.EState.FREE;
+            Program.myPlayer.GameId = null;
+
+            // Aktualizuj hraca
+            client.UpdateItemAsync(new Uri(Program.serverUri, "players/update"), Program.myPlayer).Wait();
         }
 
         // Vypis stolu na konzolu
