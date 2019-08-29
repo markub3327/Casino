@@ -91,12 +91,37 @@ namespace Casino
         // Pripoj sa na server
         private static void Connect()
         {
-            serverUri = new Uri("http://localhost:5000/casino/"); //= new Client.ServerInfo();
+            string serverName;
 
+            do {
+                do
+                {
+                    Console.Write("Hostname: ");
+                    serverName = Console.ReadLine();
+                } while (string.IsNullOrEmpty(serverName));
+
+                serverUri = new Uri($"http://{serverName}:5000/casino/"); //= new Client.ServerInfo();
+
+                if (TryConnection())
+                {
+                    ShowWarning("Connection was successful.");
+                    Console.WriteLine("\n");
+                    break;
+                }
+
+                ShowError("Cannot connect to server.");
+            } while (true);
 
             mainMenu.Items[2].IsEnabled = true;  // novy hrac
             mainMenu.Items[3].IsEnabled = false;  // novy server
             mainMenu.Items[4].IsEnabled = true;  // zoznam hracov na serveri
+        }
+
+        private static bool TryConnection()
+        {
+
+
+            return true;
         }
 
         // Registracia noveho hraca

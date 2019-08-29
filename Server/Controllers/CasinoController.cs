@@ -22,6 +22,25 @@ namespace Casino.Server.Controllers
             this.context = context;
         }
 
+        // GET http://localhost:5000/casino
+        [HttpGet("[controller]")]
+        public async Task<IActionResult> Index()
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            using (var stream = assembly.GetManifestResourceStream("Casino.Server.index.html"))
+            {
+                using (StreamReader reader = new StreamReader(stream))
+                {
+                    return new ContentResult
+                    {
+                        ContentType = "text/html",
+                        StatusCode = StatusCodes.Status200OK,
+                        Content = await reader.ReadToEndAsync()
+                    };
+                }
+            }
+        }
+
         // GET http://localhost:5000/casino/players/all
         [HttpGet("[controller]/players/all")]
         public async Task<IActionResult> GetPlayers()
