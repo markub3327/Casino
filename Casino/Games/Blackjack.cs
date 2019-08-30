@@ -201,7 +201,7 @@ namespace Casino.Games
                             // Aktualizuj hraca
                             client.UpdateItemAsync(new Uri(Program.serverUri, "players/update"), Program.myPlayer).Wait();
 
-                            Task.Delay(16).Wait();     // Refresh 60Hz => 16ms
+                            //Task.Delay(16).Wait();     // Refresh 60Hz => 16ms
                         }
                       // Ak hrac uz dohral ukonci cyklus
                     } while (true);
