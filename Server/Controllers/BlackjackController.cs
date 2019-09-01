@@ -42,7 +42,7 @@ namespace Casino.Server.Controllers
         {
             this.context = context;
 
-            if (context.Croupiers.Where(p => p.Nickname == "Croupier-Blackjack").Count() < 1)
+            if (!context.Croupiers.Any(p => p.Nickname == "Croupier-Blackjack"))
             {
                 var croupier = new Models.Croupier
                 {
@@ -77,8 +77,8 @@ namespace Casino.Server.Controllers
                 .ToArray();
 
             // Ak uz vsetci hraci ukoncili hru na rade je krupier
-            if ((croupierDb[0].State != Items.Player.EState.PLAYING) &&
-                !players.Any(p => p.State != Items.Player.EState.PLAYING && p.Nickname != "Croupier-Blackjack"))
+            if ((croupierDb[0].Action == Items.Player.EActions.STAND) &&
+                players.Where(p => p.Nickname != "Croupier-Blackjack").Any(p => p.State == Items.Player.EState.PLAYING))
             {
                 // Vynuluj krupierov profil
                 croupierDb[0].Action = Items.Player.EActions.NONE;
@@ -97,22 +97,21 @@ namespace Casino.Server.Controllers
             // Ak este hraci hraju postaraj sa o krupierove karty
             else
             {
-                var standPlayers = players.Where(p => p.Action == Items.Player.EActions.STAND);
-                if (standPlayers.Count() == (players.Count() - 1))
+                if (!players.Where(p => p.State == Items.Player.EState.PLAYING && p.Nickname != "Croupier-Blackjack").Any(p => p.Action != Items.Player.EActions.STAND))
                 {
                     await CroupierGame(croupierDb[0]);
                 }
             }
 
             // Vytvor vystup JSON zo zoznamu hracov pri stole
-            return Ok(players.Select(p => new
+            return Ok(players.Select(p => new Items.Player
             {
-                p.Nickname,
-                p.Bet,
-                Cards = p.Cards.Select(c => new { c.Suit, c.Value }),
-                p.State,
-                p.Action,
-                p.Wallet
+                Nickname = p.Nickname,
+                Bet = p.Bet,
+                Cards = p.Cards.Select(c => new Items.Card { Suit = c.Suit, Value = c.Value }),
+                State = p.State,
+                Action = p.Action,
+                Wallet = p.Wallet
             }));
         }
 

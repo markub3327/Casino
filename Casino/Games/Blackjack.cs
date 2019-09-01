@@ -64,6 +64,7 @@ namespace Casino.Games
                     }
 
                     // Nastav hraca
+                    Program.myPlayer.GameId = "Blackjack";
                     Program.myPlayer.State = Items.Player.EState.PLAYING;
                     Program.myPlayer.Action = Items.Player.EActions.NONE;
 
@@ -104,7 +105,7 @@ namespace Casino.Games
                                 {
                                     // Nastav prehru hraca
                                     Program.myPlayer.State = Items.Player.EState.LOSE;
-
+                        
                                     // Prisiel o stavku
                                     Program.myPlayer.Wallet -= Program.myPlayer.Bet;
                                 }
@@ -150,6 +151,9 @@ namespace Casino.Games
                                             }
                                     }                                
                                 }
+
+                                // Aktualizuj hraca
+                                client.UpdateItemAsync(new Uri(Program.serverUri, "players/update"), Program.myPlayer).Wait();
                             }
                             // Inak hrac caka na ukoncenie kola (kym krupier dohra)
                             else
@@ -192,13 +196,13 @@ namespace Casino.Games
                                         // Prisiel o stavku
                                         Program.myPlayer.Wallet -= Program.myPlayer.Bet;
                                     }
+
+                                    // Aktualizuj hraca
+                                    client.UpdateItemAsync(new Uri(Program.serverUri, "players/update"), Program.myPlayer).Wait();
                                 }
                             }
 
-                            // Aktualizuj hraca
-                            client.UpdateItemAsync(new Uri(Program.serverUri, "players/update"), Program.myPlayer).Wait();
-
-                            //Task.Delay(16).Wait();     // Refresh 60Hz => 16ms
+                            Task.Delay(100).Wait();     // Refresh 60Hz => 16ms
                         }
                       // Ak hrac uz dohral ukonci cyklus
                     } while (true);
@@ -265,7 +269,7 @@ namespace Casino.Games
                     {
                         break;
                     }
-                }
+                }                
             }
 
             Console.WriteLine();
