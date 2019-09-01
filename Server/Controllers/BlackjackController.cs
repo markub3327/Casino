@@ -100,37 +100,7 @@ namespace Casino.Server.Controllers
                 var standPlayers = players.Where(p => p.Action == Items.Player.EActions.STAND);
                 if (standPlayers.Count() == (players.Count() - 1))
                 {
-                    // Hra krupiera (asynchronna uloha)
-                    await Task.Run(async () =>
-                    {
-                        // Krupier si taha karty do suctu 17 a viac
-                        do
-                        {
-                            // Tahaj karty dokym nemas aspon 17 
-                            var Csum = croupierDb[0].CardSum;
-                            if (Csum >= 17)
-                            {
-                                // Krupier ukoncil hru idu sa vyplacat vyhry
-                                croupierDb[0].Action = Items.Player.EActions.STAND;
-                                croupierDb[0].State = Items.Player.EState.FREE;
-
-                                // Prida zaznam do Db
-                                await context.SaveChangesAsync();
-
-                                // Koniec
-                                break;
-                            }
-
-                            // Prirad nahodnu kartu
-                            await RandomCard(croupierDb[0]);
-
-                            // Krupier ukoncil hru idu sa vyplacat vyhry
-                            croupierDb[0].Action = Items.Player.EActions.HIT;
-
-                            // Uloz do Db
-                            await context.SaveChangesAsync();
-                        } while (true);
-                    });
+                    await CroupierGame(croupierDb[0]);
                 }
             }
 
@@ -230,6 +200,40 @@ namespace Casino.Server.Controllers
             }
 
             Console.WriteLine($"Player cards = {player.CardSum}");
+        }
+
+        private async Task CroupierGame(Items.Player croupier)
+        {
+            // Hra krupiera (asynchronna uloha)
+            await Task.Run(async () =>
+            {
+                // Krupier si taha karty do suctu 17 a viac
+                do
+                {
+                    // Tahaj karty dokym nemas aspon 17 
+                    var Csum = croupier.CardSum;
+                    if (Csum >= 17)
+                    {
+                        // Krupier ukoncil hru idu sa vyplacat vyhry
+                        croupier.Action = Items.Player.EActions.STAND;
+
+                        // Prida zaznam do Db
+                        await context.SaveChangesAsync();
+
+                        // Koniec
+                        break;
+                    }
+
+                    // Prirad nahodnu kartu
+                    await RandomCard(croupier);
+
+                    // Krupier ukoncil hru idu sa vyplacat vyhry
+                    croupier.Action = Items.Player.EActions.HIT;
+
+                    // Uloz do Db
+                    await context.SaveChangesAsync();
+                } while (true);
+            });
         }
     }
 }

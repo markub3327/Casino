@@ -37,9 +37,6 @@ namespace Casino.Games
 
             // Hlavicka
             Head();
-
-            // Nastav hraca na hru
-            Program.myPlayer.GameId = "Blackjack";
         }
 
         // Jadro hry
@@ -283,7 +280,7 @@ namespace Casino.Games
             Program.myPlayer.Action = Items.Player.EActions.NONE;
             Program.myPlayer.Bet = 0L;
             Program.myPlayer.State = Items.Player.EState.FREE;
-            Program.myPlayer.GameId = null;
+            Program.myPlayer.GameId = "Nothing";
 
             // Aktualizuj hraca
             client.UpdateItemAsync(new Uri(Program.serverUri, "players/update"), Program.myPlayer).Wait();
