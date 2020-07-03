@@ -1,4 +1,4 @@
-## Casino
+# Casino
 
 [![Release](https://img.shields.io/github/release/marhor3327/Casino.svg)](https://github.com/marhor3327/Casino/releases)
 ![Languages](https://img.shields.io/github/languages/count/marhor3327/Casino)
