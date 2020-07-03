@@ -1,10 +1,12 @@
 # Casino
 
 [![Release](https://img.shields.io/github/release/marhor3327/Casino.svg)](https://github.com/marhor3327/Casino/releases)
-![Languages](https://img.shields.io/github/languages/count/marhor3327/Casino)
-[![Issues](https://img.shields.io/github/issues/marhor3327/Casino.svg)](https://github.com/marhor3327/Casino/issues)
+[![Release-date](https://img.shields.io/github/release-date/markub3327/Casino)](https://github.com/marhor3327/Casino/releases)
 ![Size](https://img.shields.io/github/repo-size/marhor3327/Casino.svg)
-![Stars](https://img.shields.io/github/stars/marhor3327/Casino.svg)
+![Downloads](https://img.shields.io/github/downloads/markub3327/Casino/total)
+![Commit-activity](https://img.shields.io/github/commit-activity/y/markub3327/Casino)
+![Last-commit](https://img.shields.io/github/last-commit/markub3327/Casino)
+![Platform](https://img.shields.io/badge/platform-osx%2C%20win%2C%20linux-informational)
 
 **Documentation**
 
