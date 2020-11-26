@@ -245,8 +245,8 @@ namespace Casino
             Console.Write("Welcome to ");
             Head();
 
-            Console.WriteLine("Martin Horvath \u00A9 Copyright 2019 MIT");
-            Console.WriteLine("Website: https://github.com/marhor3327/Casino.git");
+            Console.WriteLine("Martin Kubovčík \u00A9 Copyright 2020 MIT");
+            Console.WriteLine("Website: https://github.com/markub3327/Casino.git");
             Console.WriteLine("University of Ss. Cyril and Methodius in Trnava");
             Console.WriteLine("===============================================\n");
         }
