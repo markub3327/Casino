@@ -15,11 +15,13 @@ It has been written in Visual Studio Community 2019 for Mac.
 
 ## Installation & Run
 
-### To install game you must clone this repo to local folder:
+### Clone repo
 
 ```
 git clone https://github.com/markub3327/Casino.git
 ```
+
+Or you can download release.
 
 ### Run game
 
