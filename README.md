@@ -15,16 +15,16 @@ It has been written in Visual Studio Community 2019 for Mac.
 
 ## Installation & Run
 
-To install game you must clone this repo to local folder:
+### To install game you must clone this repo to local folder:
 
 ```
 git clone https://github.com/markub3327/Casino.git
 ```
 
-And in console open folder and run
+### Run game
 
 ```
-cd Casino
+cd Casino/Casino
 dotnet run
 ```
 
